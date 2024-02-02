@@ -16,10 +16,9 @@
 amends "../basePklProject.pkl"
 
 package {
-  version = "1.0.0"
+  version = "1.0.1"
 }
 
 dependencies {
-//   TODO(After release of this and pkl-pantry): Cut over to `pkl-pantry` dependency
-//   ["circleci"] { uri = "package://pkg.pkl-lang.org/pkl-pantry/com.circleci@1.0.0" }
+  ["circleci"] { uri = "package://pkg.pkl-lang.org/pkl-pantry/com.circleci.v2@1.0.0" }
 }

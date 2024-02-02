@@ -17,11 +17,10 @@
 module pkl.impl.circleci.PklCI
 
 // TODO: Undo this hack to break the cycle; pkl-pantry depends on pkl-project-commons and vice-versa.
-// Copied in `CircleCI.pkl` locally, so that `pkl-project-commons` builds green and publishes.
+// Copied in `Config.pkl` locally, so that `pkl-project-commons` builds green and publishes.
 // Releasing `pkl-project-commons` first allows `pkl-pantry` to be released dependent on it. After `pkl-pantry`
-// is public, delete `CircleCI.pkl` from this repository and use the `package://` import below.
-//import "@circleci/CircleCI.pkl"
-import "CircleCI.pkl"
+// is public, delete `Config.pkl` from this repository and use the `package://` import below.
+import "@circleci/Config.pkl"
 
 /// A map of user-selected names to either: orb references (strings) or orb definitions (maps).
 ///
@@ -30,18 +29,18 @@ import "CircleCI.pkl"
 orbs: Mapping<String, Orb|String>?
 
 /// The jobs required by this build
-jobs: Mapping<String, CircleCI.Job>
+jobs: Mapping<String, Config.Job>
 
 /// The workflow to run for pull request builds.
-prb: CircleCI.Workflow
+prb: Config.Workflow
 
 /// The workflow to run for commits on the main branch
-main: CircleCI.Workflow
+main: Config.Workflow
 
 /// The workflow to run for tags that match a semver.
 ///
 /// If [null], this workflow is omitted.
-release: CircleCI.Workflow?
+release: Config.Workflow?
 
 /// Whether to trigger a build of the Pkl docsite or not.
 ///
@@ -83,7 +82,7 @@ local function withTriggerDownstreamJob(jobName: String): Mixin<Listing<*Mapping
 local identity = (it) -> it
 
 /// The CircleCI output.
-circleCi: CircleCI = new {
+circleCi: Config = new {
   version = "2.1"
   orbs = (module.orbs) {
     ["pr-approval"] = "apple/pr-approval@0.1.0"
@@ -158,7 +157,7 @@ circleCi: CircleCI = new {
       `when` {
         equal {
           "main"
-          CircleCI.pipelineValues.`pipeline.git.branch`
+          Config.pipelineValues.`pipeline.git.branch`
         }
       }
       jobs = super.jobs
@@ -178,8 +177,8 @@ circleCi: CircleCI = new {
   }
 }
 
-local runOnTag = (jobs: Listing<Mapping<String, CircleCI.WorkflowJob>|String>) ->
-  new Listing<*Mapping<String, CircleCI.WorkflowJob>|String> {
+local runOnTag = (jobs: Listing<Mapping<String, Config.WorkflowJob>|String>) ->
+  new Listing<*Mapping<String, Config.WorkflowJob>|String> {
     for (job in jobs) {
       when (job is String) {
         new {
@@ -211,9 +210,9 @@ local runOnTag = (jobs: Listing<Mapping<String, CircleCI.WorkflowJob>|String>) -
     }
   }
 
-local requireApproval = (it: String|Mapping<String, CircleCI.WorkflowJob>) ->
+local requireApproval = (it: String|Mapping<String, Config.WorkflowJob>) ->
   if (it is String)
-    new Mapping<String, CircleCI.WorkflowJob> {
+    new Mapping<String, Config.WorkflowJob> {
       [it] {
         requires { "hold"; "pr-approval/authenticate" }
       }
@@ -228,18 +227,18 @@ local requireApproval = (it: String|Mapping<String, CircleCI.WorkflowJob>) ->
 output = circleCi.output
 
 // re-export types so they are available without qualification
-typealias StoreTestResults = CircleCI.StoreTestResults
-typealias SaveCacheStep = CircleCI.SaveCacheStep
-typealias AttachWorkspaceStep = CircleCI.AttachWorkspaceStep
-typealias RunStep = CircleCI.RunStep
-typealias PersistToWorkspaceStep = CircleCI.PersistToWorkspaceStep
-typealias RestoreCacheStep = CircleCI.RestoreCacheStep
-typealias SetupRemoteDockerStep = CircleCI.SetupRemoteDockerStep
-typealias UnlessStep = CircleCI.UnlessStep
-typealias WhenStep = CircleCI.WhenStep
-typealias LogicStatement = CircleCI.LogicStatement
-typealias Job = CircleCI.Job
-typealias JobFilters = CircleCI.JobFilters
-typealias Workflow = CircleCI.Workflow
-typealias WorkflowJob = CircleCI.WorkflowJob
-typealias Orb = CircleCI.Orb
+typealias StoreTestResults = Config.StoreTestResults
+typealias SaveCacheStep = Config.SaveCacheStep
+typealias AttachWorkspaceStep = Config.AttachWorkspaceStep
+typealias RunStep = Config.RunStep
+typealias PersistToWorkspaceStep = Config.PersistToWorkspaceStep
+typealias RestoreCacheStep = Config.RestoreCacheStep
+typealias SetupRemoteDockerStep = Config.SetupRemoteDockerStep
+typealias UnlessStep = Config.UnlessStep
+typealias WhenStep = Config.WhenStep
+typealias LogicStatement = Config.LogicStatement
+typealias Job = Config.Job
+typealias JobFilters = Config.JobFilters
+typealias Workflow = Config.Workflow
+typealias WorkflowJob = Config.WorkflowJob
+typealias Orb = Config.Orb
