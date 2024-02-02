@@ -1,0 +1,5 @@
+= Pkl Project Commons
+
+This repository houses libraries that are implementation details for the Pkl project.
+
+These libraries are not meant for general use.

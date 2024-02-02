@@ -1,0 +1,245 @@
+//===----------------------------------------------------------------------===//
+// Copyright © 2024 Apple Inc. and the Pkl project authors. All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//===----------------------------------------------------------------------===//
+/// CI job template specifically for Pkl projects.
+module pkl.impl.circleci.PklCI
+
+// TODO: Undo this hack to break the cycle; pkl-pantry depends on pkl-project-commons and vice-versa.
+// Copied in `CircleCI.pkl` locally, so that `pkl-project-commons` builds green and publishes.
+// Releasing `pkl-project-commons` first allows `pkl-pantry` to be released dependent on it. After `pkl-pantry`
+// is public, delete `CircleCI.pkl` from this repository and use the `package://` import below.
+//import "@circleci/CircleCI.pkl"
+import "CircleCI.pkl"
+
+/// A map of user-selected names to either: orb references (strings) or orb definitions (maps).
+///
+/// Orb definitions must be the orb-relevant subset of 2.1 config.
+/// See the [Creating Orbs](https://circleci.com/docs/creating-orbs/) documentation for details.
+orbs: Mapping<String, Orb|String>?
+
+/// The jobs required by this build
+jobs: Mapping<String, CircleCI.Job>
+
+/// The workflow to run for pull request builds.
+prb: CircleCI.Workflow
+
+/// The workflow to run for commits on the main branch
+main: CircleCI.Workflow
+
+/// The workflow to run for tags that match a semver.
+///
+/// If [null], this workflow is omitted.
+release: CircleCI.Workflow?
+
+/// Whether to trigger a build of the Pkl docsite or not.
+///
+/// * `"none"` - does not trigger build after the [release] workflow (default)
+/// * `"release"` - trigger build after the [release] workflow only.
+/// * `"both"` - trigger build for the [release] workflow and the [main] workflow.
+/// `both` should only be used for projects where we publish documentation
+/// for dev/snapshot builds.
+triggerDocsBuild: "none"|"release"|"both" = "none"
+
+/// Whether to trigger a build of pkl-package-docs or not.
+///
+/// * `"none"` -- does not trigger a build after the [release] workflow (default)
+/// * `"release"` -- trigger a build after the [release] workflow
+/// * `"main"` -- trigger a build after the [main] workflow
+triggerPackageDocsBuild: "none"|"main"|"release" = "none"
+
+local function leafJobNames(jobs: Listing<Mapping<String, WorkflowJob>|String>) =
+  let (
+    requiredJobs = jobs.toList()
+      .filterIsInstance(Mapping)
+      .flatMap((it: Mapping<String, WorkflowJob>) -> it[it.keys.first].requires?.toList() ?? List())
+      .toSet()
+  )
+    let (allJobNames = jobs.toList().map((it) -> if (it is String) it else it.keys.first).toSet())
+      allJobNames.difference(requiredJobs)
+
+local function withTriggerDownstreamJob(jobName: String): Mixin<Listing<*Mapping<String, WorkflowJob>|String>> = (it) -> (it) {
+  new {
+    [jobName] {
+      requires = leafJobNames(it).toListing()
+      context {
+        "pkl-pr-approval"
+      }
+    }
+  }
+}
+
+local identity = (it) -> it
+
+/// The CircleCI output.
+circleCi: CircleCI = new {
+  version = "2.1"
+  orbs = (module.orbs) {
+    ["pr-approval"] = "apple/pr-approval@0.1.0"
+  }
+  jobs = (module.jobs) {
+    when (triggerDocsBuild != "none") {
+      ["trigger-docsite-build"] {
+        docker {
+          new { image = "cimg/base:current" }
+        }
+        steps {
+          new RunStep {
+            name = "Triggering docsite build"
+            command = #"""
+              curl --location \
+                --request POST \
+                --header "Content-Type: application/json" \
+                -u "${CIRCLE_TOKEN}:" \
+                --data '{ "branch": "main" }' \
+                "https://circleci.com/api/v2/project/github/apple/pkl-lang.org/pipeline"
+              """#
+          }
+        }
+      }
+    }
+    when (triggerPackageDocsBuild != "none") {
+      ["trigger-package-docs-build"] {
+        docker {
+          new { image = "cimg/base:current" }
+        }
+        steps {
+          new RunStep {
+            name = "Triggering docsite build"
+            command = #"""
+              curl --location \
+                --request POST \
+                --header "Content-Type: application/json" \
+                -u "${CIRCLE_TOKEN}:" \
+                --data '{ "branch": "main" }' \
+                "https://circleci.com/api/v2/project/github/apple/pkl-package-docs/pipeline"
+              """#
+          }
+        }
+      }
+    }
+  }
+  workflows {
+    ["prb"] = (prb) {
+      `when` {
+        matches {
+          pattern = "^pull/\\d+(/head)?$"
+          value = "<< pipeline.git.branch >>"
+        }
+      }
+      jobs = new {
+        new {
+          ["hold"] {
+            type = "approval"
+          }
+        }
+        new {
+          ["pr-approval/authenticate"] {
+            context = "pkl-pr-approval"
+          }
+        }
+        for (job in prb.jobs) {
+          job |> requireApproval
+        }
+      }
+    }
+    ["main"] = (main) {
+      `when` {
+        equal {
+          "main"
+          CircleCI.pipelineValues.`pipeline.git.branch`
+        }
+      }
+      jobs = super.jobs
+        |> (if (triggerPackageDocsBuild == "main") withTriggerDownstreamJob("trigger-package-docs-build") else identity)
+        |> (if (triggerDocsBuild == "both") withTriggerDownstreamJob("trigger-docsite-build") else identity)
+    }
+    when (release != null) {
+      ["release"] = (release) {
+        // Can't use `when` for building on tags.
+        // See: https://discuss.circleci.com/t/cant-trigger-workflow-on-git-tag-push-using-when-condition/43252
+        jobs = super.jobs
+          |> (if (triggerPackageDocsBuild == "release") withTriggerDownstreamJob("trigger-package-docs-build") else identity)
+          |> (if (triggerDocsBuild == "release") withTriggerDownstreamJob("trigger-docsite-build") else identity)
+          |> runOnTag
+      }
+    }
+  }
+}
+
+local runOnTag = (jobs: Listing<Mapping<String, CircleCI.WorkflowJob>|String>) ->
+  new Listing<*Mapping<String, CircleCI.WorkflowJob>|String> {
+    for (job in jobs) {
+      when (job is String) {
+        new {
+          [job] {
+            filters {
+              tags {
+                only = #"/^v?\d+\.\d+\.\d+$/"#
+              }
+              branches {
+                ignore = "/.*/"
+              }
+            }
+          }
+        }
+      } else {
+        (job) {
+          [job.keys.first] {
+            filters {
+              tags {
+                only = #"/^v?\d+\.\d+\.\d+$/"#
+              }
+              branches {
+                ignore = "/.*/"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+local requireApproval = (it: String|Mapping<String, CircleCI.WorkflowJob>) ->
+  if (it is String)
+    new Mapping<String, CircleCI.WorkflowJob> {
+      [it] {
+        requires { "hold"; "pr-approval/authenticate" }
+      }
+    }
+  else
+    (it) {
+      [it.keys.first] {
+        requires { "hold"; "pr-approval/authenticate" }
+      }
+    }
+
+output = circleCi.output
+
+// re-export types so they are available without qualification
+typealias StoreTestResults = CircleCI.StoreTestResults
+typealias SaveCacheStep = CircleCI.SaveCacheStep
+typealias AttachWorkspaceStep = CircleCI.AttachWorkspaceStep
+typealias RunStep = CircleCI.RunStep
+typealias PersistToWorkspaceStep = CircleCI.PersistToWorkspaceStep
+typealias RestoreCacheStep = CircleCI.RestoreCacheStep
+typealias SetupRemoteDockerStep = CircleCI.SetupRemoteDockerStep
+typealias UnlessStep = CircleCI.UnlessStep
+typealias WhenStep = CircleCI.WhenStep
+typealias LogicStatement = CircleCI.LogicStatement
+typealias Job = CircleCI.Job
+typealias JobFilters = CircleCI.JobFilters
+typealias Workflow = CircleCI.Workflow
+typealias WorkflowJob = CircleCI.WorkflowJob
+typealias Orb = CircleCI.Orb
