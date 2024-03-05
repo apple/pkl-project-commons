@@ -16,10 +16,6 @@
 /// CI job template specifically for Pkl projects.
 module pkl.impl.circleci.PklCI
 
-// TODO: Undo this hack to break the cycle; pkl-pantry depends on pkl-project-commons and vice-versa.
-// Copied in `Config.pkl` locally, so that `pkl-project-commons` builds green and publishes.
-// Releasing `pkl-project-commons` first allows `pkl-pantry` to be released dependent on it. After `pkl-pantry`
-// is public, delete `Config.pkl` from this repository and use the `package://` import below.
 import "@circleci/Config.pkl"
 
 /// A map of user-selected names to either: orb references (strings) or orb definitions (maps).
@@ -214,13 +210,13 @@ local requireApproval = (it: String|Mapping<String, Config.WorkflowJob>) ->
   if (it is String)
     new Mapping<String, Config.WorkflowJob> {
       [it] {
-        requires { "hold"; "pr-approval/authenticate" }
+        requires { "hold" }
       }
     }
   else
     (it) {
       [it.keys.first] {
-        requires { "hold"; "pr-approval/authenticate" }
+        requires { "hold" }
       }
     }
 
