@@ -38,6 +38,9 @@ main: Config.Workflow
 /// If [null], this workflow is omitted.
 release: Config.Workflow?
 
+/// The workflow to run for commits that land on `release/x.x` branches.
+releaseBranch: Config.Workflow?
+
 /// Whether to trigger a build of the Pkl docsite or not.
 ///
 /// * `"none"` - does not trigger build after the [release] workflow (default)
@@ -168,6 +171,16 @@ circleCi: Config = new {
           |> (if (triggerPackageDocsBuild == "release") withTriggerDownstreamJob("trigger-package-docs-build") else identity)
           |> (if (triggerDocsBuild == "release") withTriggerDownstreamJob("trigger-docsite-build") else identity)
           |> runOnTag
+      }
+    }
+    when (releaseBranch != null) {
+      ["release-branch"] = (releaseBranch) {
+        `when` {
+          matches {
+            pattern = #"^release/\d+\.\d+$"#
+            value = "<< pipeline.git.branch >>"
+          }
+        }
       }
     }
   }
