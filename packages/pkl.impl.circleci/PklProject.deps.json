@@ -3,9 +3,9 @@
   "resolvedDependencies": {
     "package://pkg.pkl-lang.org/pkl-pantry/com.circleci.v2@1": {
       "type": "remote",
-      "uri": "projectpackage://pkg.pkl-lang.org/pkl-pantry/com.circleci.v2@1.1.0",
+      "uri": "projectpackage://pkg.pkl-lang.org/pkl-pantry/com.circleci.v2@1.1.2",
       "checksums": {
-        "sha256": "f93accc9e74c2980c9db6dc608d2325d5d1c91854bf485ec30fd276ac2a412eb"
+        "sha256": "ab4730d2f8b5373e8e57f889aa5a9c39b40a7b953019e3d7047f1a6fde90d2ad"
       }
     }
   }
