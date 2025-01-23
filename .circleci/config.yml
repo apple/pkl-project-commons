@@ -17,7 +17,7 @@ jobs:
         paths:
         - build
     docker:
-    - image: cimg/openjdk:17.0
+    - image: cimg/openjdk:21.0
   release:
     steps:
     - checkout
@@ -66,7 +66,6 @@ workflows:
     - build:
         requires:
         - hold
-        - pr-approval/authenticate
     when:
       matches:
         value: << pipeline.git.branch >>
