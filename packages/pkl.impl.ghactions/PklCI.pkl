@@ -30,7 +30,16 @@ import "actions/PublishUnitTestResult.pkl"
 /// This turns into a workflow called "Pull Request".
 prb: Workflow
 
-/// The workflow to run for commits that land on branches.
+/// The workflow to run for commits that lands on the `main` branch only.
+///
+/// The following fields are overwritten and therefore don't need to be set:
+///   * [Workflow.on]
+///   * [Workflow.name]
+///
+/// This turns into a workflow called "Build".
+main: Workflow
+
+/// The workflow to run for commits that land on non-main branches.
 ///
 /// The following fields are overwritten and therefore don't need to be set:
 ///   * [Workflow.on]
@@ -65,8 +74,23 @@ local effectiveBuildWorkflow = (build) {
   name = "Build"
   on = new {
     push {
-      branches {
+      `branches-ignore` {
+        "main"
+      }
+      `tags-ignore` {
         "*"
+      }
+    }
+  }
+  jobs = super.jobs |> withPublishTestResults |> withUploadTestResultHtml
+}
+
+local effectiveMainWorkflow = (main) {
+  name = "Build (main)"
+  on = new {
+    push {
+      branches {
+        "main"
       }
       `tags-ignore` {
         "*"
@@ -249,6 +273,7 @@ output {
   files {
     ["workflows/prb.yml"] = effectivePrbWorkflow.output
     ["workflows/build.yml"] = effectiveBuildWorkflow.output
+    ["workflows/main.yml"] = effectiveMainWorkflow.output
     when (release != null) {
       ["workflows/release.yml"] = effectiveReleaseWorkflow.output
     }
