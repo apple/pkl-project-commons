@@ -26,6 +26,7 @@ local buildJob: Workflow.Job = new {
     new Setup.Java {
       javaVersion = "21"
       distribution = "temurin"
+      cache = "gradle"
     }
     new {
       name = "Gradle build"
