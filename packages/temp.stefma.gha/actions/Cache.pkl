@@ -1,0 +1,166 @@
+//===----------------------------------------------------------------------===//
+// Copyright © 2025 Apple Inc. and the Pkl project authors. All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//===----------------------------------------------------------------------===//
+/// Actions for managing cache in GitHub workflows.
+/// This module is a low-level module not indended for direct use.
+/// Use the [Action](../Action) module instead to access these actions.
+module temp.stefma.gha.actions.Cache
+
+import "../Workflow.pkl"
+
+/// Type-safe GitHub Action of the [cache](https://github.com/actions/cache) action.
+class Cache extends Workflow.Step {
+  uses: "actions/cache@v4"
+
+  /// A list of files, directories, and wildcard patterns to cache and restore
+  ///
+  /// Each entry should be separated by newlines.
+  ///
+  /// Example:
+  ///
+  /// ```
+  /// path =
+  ///   """
+  ///   path/to/dependencies
+  ///   some/other/dependencies
+  ///   """
+  /// ```
+  hidden path: String
+
+  /// An explicit key for restoring and saving the cache
+  hidden key: String
+
+  /// An ordered multiline string listing the prefix-matched keys, that are used for restoring stale cache if no cache
+  /// hit occurred for key.
+  ///
+  /// Note `cache-hit` returns false in this case.
+  hidden restoreKeys: String?
+
+  /// The chunk size used to split up large files during upload, in bytes
+  hidden uploadChunkSize: Int?
+
+  /// An optional boolean when enabled, allows windows runners to save or restore caches that can be restored or saved
+  /// respectively on other platforms
+  hidden enableCrossOsArchive: Boolean?
+
+  /// Fail the workflow if cache entry is not found
+  hidden failOnCacheMiss: Boolean?
+
+  /// Check if a cache entry exists for the given input(s) ([key], [restoreKeys]) without downloading the cache.
+  hidden lookupOnly: Boolean?
+
+  /// Run the post step to save the cache even if another step before fails
+  hidden saveAlways: Boolean?
+
+  local localWith = new Mapping {
+    ["path"] = path
+    ["key"] = key
+    ["restore-keys"] = restoreKeys
+    ["upload-chunk-size"] = uploadChunkSize
+    ["enableCrossOsArchive"] = enableCrossOsArchive
+    ["fail-on-cache-miss"] = failOnCacheMiss
+    ["lookup-only"] = lookupOnly
+    ["save-always"] = saveAlways
+  }
+  local filteredWith = localWith.toMap().filter((_, value) -> value != null)
+  with = if (filteredWith.isEmpty) null else filteredWith.toMapping()
+}
+
+/// Type-safe GitHub Action of the [cache/save](https://github.com/actions/cache/tree/main/save) action.
+class Save extends Workflow.Step {
+  uses: "actions/cache/save@v4"
+
+  /// A list of files, directories, and wildcard patterns to cache and restore
+  ///
+  /// Each entry should be separated by newlines.
+  ///
+  /// Example:
+  ///
+  /// ```
+  /// path =
+  ///   """
+  ///   path/to/dependencies
+  ///   some/other/dependencies
+  ///   """
+  /// ```
+  hidden path: String
+
+  /// An explicit key for saving the cache
+  hidden key: String
+
+  /// The chunk size used to split up large files during upload, in bytes.
+  hidden uploadChunkSize: Int?
+
+  /// An optional boolean when enabled, allows windows runners to save caches that can be restored on other platforms.
+  hidden enableCrossOsArchive: Boolean?
+
+  local localWith = new Mapping {
+    ["path"] = path
+    ["key"] = key
+    ["upload-chunk-size"] = uploadChunkSize
+    ["enableCrossOsArchive"] = enableCrossOsArchive
+  }
+  local filteredWith = localWith.toMap().filter((_, value) -> value != null)
+  with = if (filteredWith.isEmpty) null else filteredWith.toMapping()
+}
+
+/// Type-safe GitHub Action of the [cache/save](https://github.com/actions/cache/tree/main/restore) action.
+class Restore extends Workflow.Step {
+  uses: "actions/cache/restore@v4"
+
+  /// A list of files, directories, and wildcard patterns to restore
+  ///
+  /// Each entry should be separated by newlines.
+  ///
+  /// Example:
+  ///
+  /// ```
+  /// path =
+  ///   """
+  ///   path/to/dependencies
+  ///   some/other/dependencies
+  ///   """
+  /// ```
+  hidden path: String
+
+  /// An explicit key for restoring the cache
+  hidden key: String
+
+  /// An ordered multiline string listing the prefix-matched keys, that are used for restoring stale cache if no cache
+  /// hit occurred for key.
+  ///
+  /// Note `cache-hit` returns false in this case.
+  hidden restoreKeys: Boolean?
+
+  /// An optional boolean when enabled, allows windows runners to restore caches that were saved on other platforms.
+  hidden enableCrossOsArchive: Boolean?
+
+  /// Fail the workflow if cache entry is not found.
+  hidden failOnCacheMiss: Boolean?
+
+  /// Check if a cache entry exists for the given input(s) (key, restore-keys) without downloading the cache.
+  hidden lookupOnly: Boolean?
+
+  local localWith = new Mapping {
+    ["path"] = path
+    ["key"] = key
+    ["restore-keys"] = restoreKeys
+    ["enableCrossOsArchive"] = enableCrossOsArchive
+    ["fail-on-cache-miss"] = failOnCacheMiss
+    ["lookup-only"] = lookupOnly
+  }
+  local filteredWith = localWith.toMap().filter((_, value) -> value != null)
+  with = if (filteredWith.isEmpty) null else filteredWith.toMapping()
+}

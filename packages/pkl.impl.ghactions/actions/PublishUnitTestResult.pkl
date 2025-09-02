@@ -1,0 +1,141 @@
+//===----------------------------------------------------------------------===//
+// Copyright © 2025 Apple Inc. and the Pkl project authors. All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//===----------------------------------------------------------------------===//
+module pkl.impl.ghactions.PublishUnitTestResult
+
+extends "TypedStep.pkl"
+
+fixed uses: "EnricoMi/publish-unit-test-result-action@v2"
+
+with: Inputs?
+
+/// Not complete; see <https://github.com/EnricoMi/publish-unit-test-result-action/blob/master/action.yml> for the
+/// complete set of inputs.
+class Inputs {
+  /// Github API Access Token.
+  github_token: String?
+
+  /// [deprecated] This is not needed any more as this is detected automatically.
+  @Deprecated
+  github_token_actor: String?
+
+  /// Requests to the GitHub API are retried this number of times.
+  ///
+  /// The value must be a positive integer or zero.
+  /// Default: 10
+  github_retries: Int(isPositive)?
+
+  /// Either "true" or "false", in which case it controls whether to verify the Github server’s TLS certificate, or a
+  /// string, in which case it must be a path to a CA bundle to use.
+  ///
+  /// Default is "true".
+  ssl_verify: (Boolean|String)?
+
+  /// Commit SHA to which test results are published.
+  ///
+  /// Only needed if the value of `GITHUB_SHA` does not work for you.
+  commit: String?
+
+  /// Name of the created check to run.
+  ///
+  /// Default: "Test Results"
+  check_name: String?
+
+  /// An alternative title for the pull request comment.
+  ///
+  /// Defaults to the [check_name] input.
+  comment_title: String?
+
+  /// The action posts comments to pull requests that are associated with the commit.
+  ///
+  /// * "always" - always comment
+  /// * "changes" - comment when changes w.r.t. the target branch exist
+  /// * "changes in failures" - when changes in the number of failures and errors exist
+  /// * "changes in errors" - when changes in the number of (only) errors exist
+  /// * "failures" - when failures or errors exist
+  /// * "errors" - when (only) errors exist
+  /// * "off" - to not create pull request comments.
+  ///
+  /// Default: "always"
+  comment_mode: ("always"|"changes"|"changes in failure"|"changes in errors"|"failures"|"errors"|"off")?
+
+  /// The created test result check run has failure state if any test fails or test errors occur.
+  ///
+  /// Never fails when set to "nothing", fails only on errors when set to "errors". Default is "test failures".'
+  fail_on: ("nothing"|"errors"|"test failures")?
+
+  /// When set "true", the action itself fails when tests have failed (see option fail_on).
+  action_fail: Boolean?
+
+  /// When set "true", the action itself fails when tests are inconclusive (no test results).
+  action_fail_on_inconclusive: Boolean?
+
+  /// File patterns of test result files.
+  ///
+  /// Relative paths are known to work best, while the non-Docker action also works with absolute paths.
+  ///
+  /// Supports "*", "**", "?", and "[]" character ranges.
+  /// Patterns starting with "!" exclude the matching files.
+  /// There have to be at least one pattern starting without a "!".'
+  hidden file_patterns: Listing<String>?
+
+  /// The result of [file_patterns].
+  ///
+  /// Instead of setting this property, set [file_patterns] instead.
+  fixed files = file_patterns.join("\n")
+
+  /// Deprecated; use [file_patterns] option instead.
+  @Deprecated
+  junit_files: String?
+
+  /// Deprecated; use [file_patterns] option instead.
+  @Deprecated
+  nunit_files: String?
+
+  /// Deprecated; use [file_patterns] option instead.
+  @Deprecated
+  xunit_files: String?
+
+  /// Deprecated; use [file_patterns] option instead.
+  @Deprecated
+  trx_files: String?
+
+  /// Time values in the test result files have this unit. Supports "seconds" and "milliseconds".
+  ///
+  /// Default: "seconds"
+  time_unit: ("seconds"|"milliseconds")?
+
+  /// Paths in the test result files should be relative to the git repository for annotations to work best.
+  ///
+  /// This prefix is added to (if starting with "+"), or remove from (if starting with "-") test file paths.
+  ///
+  /// Examples: `"+src/"` or `"-/opt/actions-runner"`.
+  test_file_prefix: String(startsWith("-") || startsWith("+"))?
+
+  /// Individual runs of the same test may see different failures.
+  ///
+  /// Reports all individual failures when set "true" or the first only otherwise.
+  report_individual_runs: Boolean?
+
+  /// An alternative event file to use.
+  ///
+  /// Useful to replace a "workflow_run" event file with the actual source event file.
+  event_file: String?
+
+  /// An alternative event name to use.
+  ///
+  /// Useful to replace a "workflow_run" event name with the actual source event name: github.event.workflow_run.event.
+  event_name: String?
+}
