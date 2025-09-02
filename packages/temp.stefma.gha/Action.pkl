@@ -1,0 +1,71 @@
+//===----------------------------------------------------------------------===//
+// Copyright © 2025 Apple Inc. and the Pkl project authors. All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//===----------------------------------------------------------------------===//
+/// Prebuild GitHub Actions in a typed way.
+/// Use them to eliminate boilerplate code in your plk workflows.
+///
+/// Example:
+/// ```pkl
+/// steps {
+///   (Actions.checkout) {
+///     fetchDepth = 0
+///     token = Context.secrets("CUSTOM_PAT")
+///   }
+///   (Actions.setupGo) {
+///     goVersion = "1.20.2"
+///    }
+/// }
+module temp.stefma.gha.Action
+
+import "actions/Artifact.pkl"
+import "actions/Cache.pkl"
+import "actions/Common.pkl"
+import "actions/Pages.pkl"
+import "actions/Setup.pkl"
+
+// Default Actions:
+checkout: Common.Checkout
+addToProject: Common.AddToProject
+gitHubScript: Common.GitHubScript
+labeler: Common.Labeler
+deletePackageVersion: Common.DeletePackageVersion
+stale: Common.Stale
+dependencyReviewAction: Common.DependencyReviewAction
+goDependencySubmission: Common.GoDependencySubmission
+attestSbom: Common.AttestSbom
+aiInference: Common.AiInference
+createGitHubAppToken: Common.CreateGitHubAppToken
+
+// Artifact Actions:
+downloadArtifact: Artifact.Download
+uploadArtitact: Artifact.Upload
+uploadArtifactMerge: Artifact.UploadArtifactMerge
+
+// Page Actions:
+configurePages: Pages.Configure
+uploadPagesArtifact: Pages.UploadArtifact
+jekyllBuildPages: Pages.JekyllBuild
+deployPages: Pages.Deploy
+
+// Cache Actions:
+cache: Cache.Cache
+cacheSave: Cache.Save
+cacheRestore: Cache.Restore
+
+// Setup Actions:
+setupGo: Setup.Go
+setupNode: Setup.Node
+setupPython: Setup.Python
+setupJava: Setup.Java
