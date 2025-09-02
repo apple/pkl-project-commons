@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "resolvedDependencies": {
+    "package://pkg.pkl-lang.org/pkl-project-commons/temp.stefma.gha@0": {
+      "type": "local",
+      "uri": "projectpackage://pkg.pkl-lang.org/pkl-project-commons/temp.stefma.gha@0.0.0",
+      "path": "../packages/temp.stefma.gha"
+    },
+    "package://pkg.pkl-lang.org/pkl-project-commons/pkl.impl.ghactions@0": {
+      "type": "local",
+      "uri": "projectpackage://pkg.pkl-lang.org/pkl-project-commons/pkl.impl.ghactions@0.1.0",
+      "path": "../packages/pkl.impl.ghactions"
+    }
+  }
+}

@@ -13,13 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //===----------------------------------------------------------------------===//
-/// Abstractions for working with GitHub Actions for the Pkl team.
-amends "../basePklProject.pkl"
-
-package {
-  version = "0.1.0"
-}
+amends "pkl:Project"
 
 dependencies {
-  ["gha"] = import("../temp.stefma.gha/PklProject")
+  ["pkl.impl.ghactions"] = import("../packages/pkl.impl.ghactions/PklProject")
+  ["gha"] = import("../packages/temp.stefma.gha/PklProject")
 }
