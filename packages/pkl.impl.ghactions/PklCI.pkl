@@ -30,7 +30,16 @@ import "actions/PublishUnitTestResult.pkl"
 /// This turns into a workflow called "Pull Request".
 prb: Workflow
 
-/// The workflow to run for commits that land on branches.
+/// The workflow to run for commits that land on the main branch.
+///
+/// The following fields are overwritten and therefore don't need to be set:
+///   * [Workflow.on]
+///   * [Workflow.name]
+///
+/// This turns into a workflow called "Build (main)".
+main: Workflow
+
+/// The workflow to run for commits that land on all branches except for main.
 ///
 /// The following fields are overwritten and therefore don't need to be set:
 ///   * [Workflow.on]
@@ -65,8 +74,23 @@ local effectiveBuildWorkflow = (build) {
   name = "Build"
   on = new {
     push {
-      branches {
+      `branches-ignore` {
+        "main"
+      }
+      `tags-ignore` {
         "*"
+      }
+    }
+  }
+  jobs = super.jobs |> withPublishTestResults |> withUploadTestResultHtml
+}
+
+local effectiveMainWorkflow = (build) {
+  name = "Build (main)"
+  on = new {
+    push {
+      branches {
+        "main"
       }
       `tags-ignore` {
         "*"
@@ -128,7 +152,7 @@ local testReportWorkflow: Workflow = new {
       steps {
         new {
           name = "Download artifacts"
-          uses = "dawidd6/action-download-artifact@e7466d1a7587ed14867642c2ca74b5bcc1e19a2d"
+          uses = "dawidd6/action-download-artifact@v11"
           with {
             ["path"] = "artifacts"
             ["run_id"] = "${{ github.event.workflow_run.id }}"
@@ -248,6 +272,7 @@ local withPublishTestResults: Mixin<Workflow.Jobs> = (it) ->
 output {
   files {
     ["workflows/prb.yml"] = effectivePrbWorkflow.output
+    ["workflows/main.yml"] = effectiveMainWorkflow.output
     ["workflows/build.yml"] = effectiveBuildWorkflow.output
     when (release != null) {
       ["workflows/release.yml"] = effectiveReleaseWorkflow.output
