@@ -40,7 +40,7 @@ prb: Workflow
 /// This turns into a workflow called "Build (main)".
 main: Workflow
 
-/// The workflow to run for commits that land on all branches except for main.
+/// The workflow to run for commits that land on all branches except for `main` and `release/*`
 ///
 /// The following fields are amended with additional settings:
 ///   * [Workflow.On.push]
@@ -58,6 +58,15 @@ build: Workflow
 /// This turns into a workflow called "Release".
 release: Workflow?
 
+/// The workflow that runs when commits land on `release/x.x` branches.
+///
+/// The following fields are amended with additional settings:
+///   * [Workflow.On.push]
+///   * [Workflow.name]
+///
+/// This turns into a workflow called "Build (release branch)".
+releaseBranch: Workflow?
+
 /// Test reports produced by [build] and [release].
 ///
 /// Turns into steps that upload and processes test results.
@@ -65,20 +74,26 @@ testReports: TestReports
 
 /// Whether to trigger a build of the Pkl docsite or not.
 ///
-/// * `"none"` - does not trigger build after the [release] workflow (default)
-/// * `"release"` - trigger build after the [release] workflow only.
-/// * `"both"` - trigger build for the [release] workflow and the [main] workflow.
+/// * `"none"` - does not trigger build after the [release] workflow (default).
+/// * `"release"` - trigger build after the [release] or [releaseBranch] workflows only.
+/// * `"both"` - trigger build for the [release], [releaseBranch], and [main] workflows.
 /// `both` should only be used for projects where we publish documentation
 /// for dev/snapshot builds.
 ///
-/// The secret `PKL_TRIGGER_ACTION_GH_TOKEN must be available to the workflow.
+/// The workflow must be granted the `PKL_CI` secret.
+///
+/// Does not do anything if the repo's owner is not `apple`.
 triggerDocsBuild: "none"|"release"|"both" = "none"
 
 /// Whether to trigger a build of pkl-package-docs or not.
 ///
-/// * `"none"` -- does not trigger a build after the [release] workflow (default)
-/// * `"release"` -- trigger a build after the [release] workflow
-/// * `"main"` -- trigger a build after the [main] workflow
+/// * `"none"` -- does not trigger a build after the [release] workflow (default).
+/// * `"release"` -- trigger a build after the [release] or [releaseBranch] workflows.
+/// * `"main"` -- trigger a build after the [main] workflow.
+///
+/// The workflow must be granted the `PKL_CI` secret.
+///
+/// Does not do anything if the repo's owner is not `apple`.
 triggerPackageDocsBuild: "none"|"main"|"release" = "none"
 
 class TestReports {
@@ -95,6 +110,7 @@ local effectiveBuildWorkflow = (build) {
     push {
       `branches-ignore` {
         "main"
+        "release/*"
       }
       `tags-ignore` {
         "*"
@@ -102,6 +118,21 @@ local effectiveBuildWorkflow = (build) {
     }
   }
   jobs = super.jobs |> withPublishTestResults |> withUploadTestResultHtml
+}
+
+local effectiveReleaseBranchWorkflow = (build) {
+  name = "Build (release branch)"
+  on {
+    push {
+      branches {
+        "release/*"
+      }
+      `tags-ignore` {
+        "*"
+      }
+    }
+  }
+  jobs = super.jobs |> withPublishTestResults |> withUploadTestResultHtml |> withTriggerWorkflows("release")
 }
 
 local effectiveMainWorkflow = (main) {
@@ -201,6 +232,8 @@ local testReportWorkflow: Workflow = new {
 local const TEST_RESULT_HTML_ARTIFACT_NAME = "test-results-html"
 
 local const TEST_RESULT_XML_ARTIFACT_NAME = "test-results-xml"
+
+local const PKL_CI_APP_ID = "2078927"
 
 local withUploadTestResultXml: Mixin<Workflow.Jobs> = new {
   when (!testReports.junit.isEmpty) {
@@ -305,16 +338,27 @@ local function withTriggerWorkflows(triggerType: String): Mixin<Workflow.Jobs> =
         ...it.keys
       }
       `runs-on` = "ubuntu-latest"
+      `if` = "github.repository_owner == 'apple'"
       steps {
+        new {
+          name = "Create app token"
+          id = "app-token"
+          uses = "actions/create-github-app-token@v2"
+          with {
+            ["app-id"] = PKL_CI_APP_ID
+            ["private-key"] = "${{ secrets.PKL_CI }}"
+            ["owner"] = Context.github.repositoryOwner
+          }
+        }
         when (triggerType == triggerDocsBuild || triggerDocsBuild == "both") {
           new {
             name = "Trigger pkl-lang.org build"
             env {
-              ["GH_TOKEN"] = "${{ secrets.PKL_TRIGGER_ACTION_GH_TOKEN }}"
+              ["GH_TOKEN"] = "${{ steps.app-token.outputs.token }}"
             }
             run = #"""
               gh workflow run \
-                --repo \#(Context.github.repositoryOwner)/pkl-lang.org \
+                --repo apple/pkl-lang.org \
                 --ref main \
                 --field source_run="\#(Context.github.serverUrl)/\#(Context.github.repository)/actions/runs/\#(Context.github.runId)" \
                 main.yml
@@ -325,11 +369,11 @@ local function withTriggerWorkflows(triggerType: String): Mixin<Workflow.Jobs> =
           new {
             name = "Trigger pkl-package-docs build"
             env {
-              ["GH_TOKEN"] = "${{ secrets.PKL_TRIGGER_ACTION_GH_TOKEN }}"
+              ["GH_TOKEN"] = "${{ steps.app-token.outputs.token }}"
             }
             run = #"""
               gh workflow run \
-                --repo \#(Context.github.repositoryOwner)/pkl-package-docs \
+                --repo apple/pkl-package-docs \
                 --ref main \
                 --field source_run="\#(Context.github.serverUrl)/\#(Context.github.repository)/actions/runs/\#(Context.github.runId)" \
                 main.yml
@@ -348,6 +392,9 @@ output {
     ["workflows/build.yml"] = effectiveBuildWorkflow.output
     when (release != null) {
       ["workflows/release.yml"] = effectiveReleaseWorkflow.output
+    }
+    when (releaseBranch != null) {
+      ["workflows/release-branch.yml"] = effectiveReleaseBranchWorkflow.output
     }
     when (!testReports.junit.isEmpty) {
       ["workflows/test_report.yml"] = testReportWorkflow.output
