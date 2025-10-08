@@ -233,8 +233,6 @@ local const TEST_RESULT_HTML_ARTIFACT_NAME = "test-results-html"
 
 local const TEST_RESULT_XML_ARTIFACT_NAME = "test-results-xml"
 
-local const PKL_CI_APP_ID = "2078927"
-
 local withUploadTestResultXml: Mixin<Workflow.Jobs> = new {
   when (!testReports.junit.isEmpty) {
     [[true]] {
@@ -345,8 +343,8 @@ local function withTriggerWorkflows(triggerType: String): Mixin<Workflow.Jobs> =
           id = "app-token"
           uses = "actions/create-github-app-token@v2"
           with {
-            ["app-id"] = PKL_CI_APP_ID
-            ["private-key"] = "${{ secrets.PKL_CI }}"
+            ["app-id"] = Context.secrets("PKL_CI_CLIENT_ID")
+            ["private-key"] = Context.secrets("PKL_CI")
             ["owner"] = Context.github.repositoryOwner
           }
         }
