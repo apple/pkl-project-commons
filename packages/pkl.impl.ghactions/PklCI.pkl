@@ -27,6 +27,7 @@ import "actions/PublishUnitTestResult.pkl"
 ///
 ///   * [Workflow.On.pull_request]
 ///   * [Workflow.name]
+///   * [Workflow.permissions]
 ///
 /// This turns into a workflow called "Pull Request".
 prb: Workflow
@@ -36,6 +37,7 @@ prb: Workflow
 /// The following fields are amended with additional settings:
 ///   * [Workflow.On.push]
 ///   * [Workflow.name]
+///   * [Workflow.permissions]
 ///
 /// This turns into a workflow called "Build (main)".
 main: Workflow
@@ -45,6 +47,7 @@ main: Workflow
 /// The following fields are amended with additional settings:
 ///   * [Workflow.On.push]
 ///   * [Workflow.name]
+///   * [Workflow.permissions]
 ///
 /// This turns into a workflow called "Build".
 build: Workflow
@@ -54,6 +57,7 @@ build: Workflow
 /// The following fields are amended with additional settings:
 ///   * [Workflow.On.push]
 ///   * [Workflow.name]
+///   * [Workflow.permissions]
 ///
 /// This turns into a workflow called "Release".
 release: Workflow?
@@ -63,6 +67,7 @@ release: Workflow?
 /// The following fields are amended with additional settings:
 ///   * [Workflow.On.push]
 ///   * [Workflow.name]
+///   * [Workflow.permissions]
 ///
 /// This turns into a workflow called "Build (release branch)".
 releaseBranch: Workflow?
@@ -106,6 +111,9 @@ class TestReports {
 
 local effectiveBuildWorkflow = (build) {
   name = "Build"
+  permissions = new {
+    contents = "read"
+  }
   on {
     push {
       `branches-ignore` {
@@ -122,6 +130,9 @@ local effectiveBuildWorkflow = (build) {
 
 local effectiveReleaseBranchWorkflow = (build) {
   name = "Build (release branch)"
+  permissions = new {
+    contents = "read"
+  }
   on {
     push {
       branches {
@@ -137,6 +148,9 @@ local effectiveReleaseBranchWorkflow = (build) {
 
 local effectiveMainWorkflow = (main) {
   name = "Build (main)"
+  permissions = new {
+    contents = "read"
+  }
   on {
     push {
       branches {
@@ -158,6 +172,9 @@ local effectiveMainWorkflow = (main) {
 /// published here.
 local effectivePrbWorkflow = (prb) {
   name = "Pull Request"
+  permissions = new {
+    contents = "read"
+  }
   on {
     pull_request {}
   }
@@ -166,6 +183,9 @@ local effectivePrbWorkflow = (prb) {
 
 local effectiveReleaseWorkflow = (release) {
   name = "Release"
+  permissions = new {
+    contents = "read"
+  }
   on {
     push {
       tags {
@@ -184,6 +204,9 @@ local effectiveReleaseWorkflow = (release) {
 
 local testReportWorkflow: Workflow = new {
   name = "PR Test Reports"
+  permissions = new {
+    contents = "read"
+  }
 
   on {
     workflow_run {
