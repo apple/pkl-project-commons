@@ -5,6 +5,8 @@ examples {
     # This file was generated from a template using https://github.com/StefMa/pkl-gha
     
     name: PrintHelloWorld
+    permissions:
+      contents: read
     'on':
       pull_request:
         types:
@@ -95,6 +97,8 @@ examples {
     # This file was generated from a template using https://github.com/StefMa/pkl-gha
     
     name: GitHub Action Triggers
+    permissions:
+      contents: read
     'on':
       branch_protection_rule: {}
       check_run: {}
@@ -150,6 +154,8 @@ examples {
     # This file was generated from a template using https://github.com/StefMa/pkl-gha
     
     name: Update Wiki Readme
+    permissions:
+      contents: read
     'on':
       push:
         paths:
@@ -182,6 +188,8 @@ examples {
     # This file was generated from a template using https://github.com/StefMa/pkl-gha
     
     name: Matrix Test
+    permissions:
+      contents: read
     'on':
       push:
         branches:
@@ -218,6 +226,8 @@ examples {
     # This file was generated from a template using https://github.com/StefMa/pkl-gha
     
     name: Reusable Workflow
+    permissions:
+      contents: read
     'on':
       push:
         branches:
@@ -246,6 +256,8 @@ examples {
     # This file was generated from a template using https://github.com/StefMa/pkl-gha
     
     name: Check prebuild actions
+    permissions:
+      contents: read
     'on':
       push: {}
     jobs:
