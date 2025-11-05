@@ -15,11 +15,12 @@
 //===----------------------------------------------------------------------===//
 module pkl.impl.ghactions.PublishUnitTestResult
 
-extends "TypedStep.pkl"
+import "@gha/Workflow.pkl"
 
-fixed uses: "EnricoMi/publish-unit-test-result-action@v2"
-
-with: Inputs?
+class Action extends Workflow.TypedStep {
+  abstract fixed uses = "EnricoMi/publish-unit-test-result-action@v2"
+  with: Inputs?
+}
 
 /// Not complete; see <https://github.com/EnricoMi/publish-unit-test-result-action/blob/master/action.yml> for the
 /// complete set of inputs.
