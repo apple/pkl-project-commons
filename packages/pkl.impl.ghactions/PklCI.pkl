@@ -121,7 +121,7 @@ local effectiveBuildWorkflow = (build) {
         "release/*"
       }
       `tags-ignore` {
-        "*"
+        "**"
       }
     }
   }
@@ -139,7 +139,7 @@ local effectiveReleaseBranchWorkflow = (build) {
         "release/*"
       }
       `tags-ignore` {
-        "*"
+        "**"
       }
     }
   }
@@ -157,7 +157,7 @@ local effectiveMainWorkflow = (main) {
         "main"
       }
       `tags-ignore` {
-        "*"
+        "**"
       }
     }
   }
@@ -189,10 +189,10 @@ local effectiveReleaseWorkflow = (release) {
   on {
     push {
       tags {
-        "*"
+        "**"
       }
       `branches-ignore` {
-        "*"
+        "**"
       }
     }
   }
