@@ -17,9 +17,11 @@
 amends "../basePklProject.pkl"
 
 package {
-  version = "0.3.3"
+  version = "0.4.0"
 }
 
 dependencies {
-  ["gha"] = import("../temp.stefma.gha/PklProject")
+  ["gha"] {
+    uri = "package://pkg.pkl-lang.org/github.com/stefma/pkl-gha/com.github.action@0.0.6"
+  }
 }

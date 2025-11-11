@@ -237,7 +237,7 @@ local testReportWorkflow: Workflow = new {
             ["run_id"] = "${{ github.event.workflow_run.id }}"
           }
         }
-        new PublishUnitTestResult {
+        new PublishUnitTestResult.Action {
           name = "Publish test results"
           with {
             commit = "${{ github.event.workflow_run.head_sha }}"
@@ -246,7 +246,7 @@ local testReportWorkflow: Workflow = new {
             file_patterns { "artifacts/**/*.xml" }
             comment_mode = "off"
           }
-        }.step
+        }
       }
     }
   }
@@ -262,15 +262,19 @@ local withUploadTestResultXml: Mixin<Workflow.Jobs> = new {
       steps {
         new Artifact.Upload {
           name = "Upload Test Result XML"
-          path = testReports.junit.join("\n")
           `if` = "!cancelled()"
-          artifactName = TEST_RESULT_XML_ARTIFACT_NAME
+          with {
+            path = testReports.junit.join("\n")
+            name = TEST_RESULT_XML_ARTIFACT_NAME
+          }
         }
         new Artifact.Upload {
           name = "Upload event file"
-          artifactName = "Event File"
           `if` = "!cancelled()"
-          path = Context.github.eventPath
+          with {
+            name = "Event File"
+            path = Context.github.eventPath
+          }
         }
       }
     }
@@ -283,9 +287,11 @@ local withUploadTestResultHtml: Mixin<Workflow.Jobs> = new {
       steps {
         new Artifact.Upload {
           name = "Upload Test Result HTML"
-          path = testReports.html.join("\n")
           `if` = "!cancelled()"
-          artifactName = TEST_RESULT_HTML_ARTIFACT_NAME
+          with {
+            name = TEST_RESULT_HTML_ARTIFACT_NAME
+            path = testReports.html.join("\n")
+          }
         }
       }
     }
@@ -299,9 +305,11 @@ local withPublishTestResultsForMatrixBuild: Mixin<Workflow.Jobs> = (it) -> (it) 
       // matrix build; upload test results as an artifact
       new Artifact.Upload {
         name = "Upload Test Result XML"
-        path = testReports.junit.join("\n")
+        with {
+          name = "\(TEST_RESULT_XML_ARTIFACT_NAME)-\(self.strategy.matrix.keys.join("-"))"
+          path = testReports.junit.join("\n")
+        }
         `if` = "!cancelled()"
-        artifactName = "\(TEST_RESULT_XML_ARTIFACT_NAME)-\(self.strategy.matrix.keys.join("-"))"
       }
     }
   }
@@ -314,14 +322,14 @@ local withPublishTestResultsForMatrixBuild: Mixin<Workflow.Jobs> = (it) -> (it) 
       checks = "write"
     }
     steps {
-      new PublishUnitTestResult {
+      new PublishUnitTestResult.Action {
         name = "Publish test results"
         `if` = "!cancelled()"
         with {
           file_patterns = testReports.junit
           comment_mode = "off"
         }
-      }.step
+      }
     }
   }
 }
@@ -340,14 +348,14 @@ local withPublishTestResults: Mixin<Workflow.Jobs> = (it) ->
             checks = "write"
           }
           steps {
-            new PublishUnitTestResult {
+            new PublishUnitTestResult.Action {
               name = "Publish test results"
               `if` = "!cancelled()"
               with {
                 file_patterns = testReports.junit
                 comment_mode = "off"
               }
-            }.step
+            }
           }
         }
       }
