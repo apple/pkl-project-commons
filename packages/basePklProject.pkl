@@ -21,15 +21,14 @@ import "pkl:reflect"
 
 local myModule = reflect.Module(module)
 
-local packageName: String =
-  findRootModule(reflect.Module(module))
-    .relativePathTo(module)
-    .last
+local packageName: String = findRootModule(reflect.Module(module)).relativePathTo(module).last
 
 local function findRootModule(mod: reflect.Module): Module =
   let (supermodule = mod.supermodule)
-    if (supermodule == null || !supermodule.isAmend) mod.reflectee
-    else findRootModule(supermodule)
+    if (supermodule == null || !supermodule.isAmend)
+      mod.reflectee
+    else
+      findRootModule(supermodule)
 
 local allTests = import*("**/tests/**.pkl").keys.filter((it) -> !it.contains("tests/fixtures/"))
 
@@ -37,7 +36,8 @@ package {
   name = packageName
   apiTests = tests // api tests are shared with module tests
   baseUri = "package://pkg.pkl-lang.org/pkl-project-commons/\(name)"
-  packageZipUrl = "https://github.com/apple/pkl-project-commons/releases/download/\(name)@\(version)/\(name)@\(version).zip"
+  packageZipUrl =
+    "https://github.com/apple/pkl-project-commons/releases/download/\(name)@\(version)/\(name)@\(version).zip"
   license = "Apache-2.0"
   authors {
     "The Pkl Authors <pkl-oss@group.apple.com>"
@@ -48,8 +48,10 @@ package {
   }
   description = myModule.docComment
   issueTracker = "https://github.com/apple/pkl-project-commons/issues"
-  sourceCode = "https://github.com/apple/pkl-project-commons/tree/\(name)@\(version)/packages/\(name)"
-  sourceCodeUrlScheme = "https://github.com/apple/pkl-project-commons/blob/\(name)@\(version)/packages/\(name)%{path}#L%{line}-%{endLine}"
+  sourceCode =
+    "https://github.com/apple/pkl-project-commons/tree/\(name)@\(version)/packages/\(name)"
+  sourceCodeUrlScheme =
+    "https://github.com/apple/pkl-project-commons/blob/\(name)@\(version)/packages/\(name)%{path}#L%{line}-%{endLine}"
 }
 
 tests {

@@ -42,7 +42,7 @@ class Inputs {
   /// string, in which case it must be a path to a CA bundle to use.
   ///
   /// Default is "true".
-  ssl_verify: (Boolean|String)?
+  ssl_verify: (Boolean | String)?
 
   /// Commit SHA to which test results are published.
   ///
@@ -70,12 +70,20 @@ class Inputs {
   /// * "off" - to not create pull request comments.
   ///
   /// Default: "always"
-  comment_mode: ("always"|"changes"|"changes in failure"|"changes in errors"|"failures"|"errors"|"off")?
+  comment_mode: (
+    "always"
+      | "changes"
+      | "changes in failure"
+      | "changes in errors"
+      | "failures"
+      | "errors"
+      | "off"
+  )?
 
   /// The created test result check run has failure state if any test fails or test errors occur.
   ///
   /// Never fails when set to "nothing", fails only on errors when set to "errors". Default is "test failures".'
-  fail_on: ("nothing"|"errors"|"test failures")?
+  fail_on: ("nothing" | "errors" | "test failures")?
 
   /// When set "true", the action itself fails when tests have failed (see option fail_on).
   action_fail: Boolean?
@@ -116,7 +124,7 @@ class Inputs {
   /// Time values in the test result files have this unit. Supports "seconds" and "milliseconds".
   ///
   /// Default: "seconds"
-  time_unit: ("seconds"|"milliseconds")?
+  time_unit: ("seconds" | "milliseconds")?
 
   /// Paths in the test result files should be relative to the git repository for annotations to work best.
   ///

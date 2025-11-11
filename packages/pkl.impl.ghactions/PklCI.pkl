@@ -15,9 +15,9 @@
 //===----------------------------------------------------------------------===//
 module pkl.impl.ghactions.PklCI
 
-import "@gha/Workflow.pkl"
 import "@gha/actions/Artifact.pkl"
 import "@gha/Context.pkl"
+import "@gha/Workflow.pkl"
 
 import "actions/PublishUnitTestResult.pkl"
 
@@ -88,7 +88,7 @@ testReports: TestReports
 /// The workflow must be granted the `PKL_CI` secret.
 ///
 /// Does not do anything if the repo's owner is not `apple`.
-triggerDocsBuild: "none"|"release"|"both" = "none"
+triggerDocsBuild: "none" | "release" | "both" = "none"
 
 /// Whether to trigger a build of pkl-package-docs or not.
 ///
@@ -99,7 +99,7 @@ triggerDocsBuild: "none"|"release"|"both" = "none"
 /// The workflow must be granted the `PKL_CI` secret.
 ///
 /// Does not do anything if the repo's owner is not `apple`.
-triggerPackageDocsBuild: "none"|"main"|"release" = "none"
+triggerPackageDocsBuild: "none" | "main" | "release" = "none"
 
 class TestReports {
   /// Paths, directories, and globs to junit test reports, to be processed by a GitHub Actions test reporter.
@@ -107,6 +107,17 @@ class TestReports {
 
   /// Paths, directories, and globs to HTML test reports, to be uploaded as an artifact.
   html: Listing<String>
+
+  /// Job key patterns to exclude from test report publishing.
+  excludeJobs: Listing<String | Regex>
+
+  function includes(jobKey: String): Boolean =
+    !excludeJobs.any((pattern) ->
+      if (pattern is Regex)
+        pattern.matchEntire(jobKey) != null
+      else
+        pattern == jobKey
+    )
 }
 
 local effectiveBuildWorkflow = (build) {
@@ -143,7 +154,11 @@ local effectiveReleaseBranchWorkflow = (build) {
       }
     }
   }
-  jobs = super.jobs |> withPublishTestResults |> withUploadTestResultHtml |> withTriggerWorkflows("release")
+  jobs =
+    super.jobs
+      |> withPublishTestResults
+      |> withUploadTestResultHtml
+      |> withTriggerWorkflows("release")
 }
 
 local effectiveMainWorkflow = (main) {
@@ -161,10 +176,11 @@ local effectiveMainWorkflow = (main) {
       }
     }
   }
-  jobs = super.jobs
-    |> withPublishTestResults
-    |> withUploadTestResultHtml
-    |> withTriggerWorkflows("main")
+  jobs =
+    super.jobs
+      |> withPublishTestResults
+      |> withUploadTestResultHtml
+      |> withTriggerWorkflows("main")
 }
 
 /// Can't use [withPublishTestResults] because PRs submitted from forks can't create check runs.
@@ -196,10 +212,11 @@ local effectiveReleaseWorkflow = (release) {
       }
     }
   }
-  jobs = super.jobs
-    |> withPublishTestResults
-    |> withUploadTestResultHtml
-    |> withTriggerWorkflows("release")
+  jobs =
+    super.jobs
+      |> withPublishTestResults
+      |> withUploadTestResultHtml
+      |> withTriggerWorkflows("release")
 }
 
 local testReportWorkflow: Workflow = new {
@@ -223,7 +240,8 @@ local testReportWorkflow: Workflow = new {
     ["test-results"] {
       name = "Test Results"
       `runs-on` = "ubuntu-latest"
-      `if` = "github.event.workflow_run.conclusion == 'success' || github.event.workflow_run.conclusion == 'failure'"
+      `if` =
+        "github.event.workflow_run.conclusion == 'success' || github.event.workflow_run.conclusion == 'failure'"
       permissions {
         checks = "write"
         actions = "read"
@@ -256,24 +274,28 @@ local const TEST_RESULT_HTML_ARTIFACT_NAME = "test-results-html"
 
 local const TEST_RESULT_XML_ARTIFACT_NAME = "test-results-xml"
 
-local withUploadTestResultXml: Mixin<Workflow.Jobs> = new {
+local withUploadTestResultXml: Mixin<Workflow.Jobs> = (it) -> (it) {
   when (!testReports.junit.isEmpty) {
-    [[true]] {
-      steps {
-        new Artifact.Upload {
-          name = "Upload Test Result XML"
-          `if` = "!cancelled()"
-          with {
-            path = testReports.junit.join("\n")
-            name = TEST_RESULT_XML_ARTIFACT_NAME
-          }
-        }
-        new Artifact.Upload {
-          name = "Upload event file"
-          `if` = "!cancelled()"
-          with {
-            name = "Event File"
-            path = Context.github.eventPath
+    for (key, _ in it) {
+      when (testReports.includes(key)) {
+        [key] {
+          steps {
+            new Artifact.Upload {
+              name = "Upload Test Result XML"
+              `if` = "!cancelled()"
+              with {
+                name = TEST_RESULT_XML_ARTIFACT_NAME
+                path = testReports.junit.join("\n")
+              }
+            }
+            new Artifact.Upload {
+              name = "Upload event file"
+              `if` = "!cancelled()"
+              with {
+                name = "Event File"
+                path = Context.github.eventPath
+              }
+            }
           }
         }
       }
@@ -281,16 +303,20 @@ local withUploadTestResultXml: Mixin<Workflow.Jobs> = new {
   }
 }
 
-local withUploadTestResultHtml: Mixin<Workflow.Jobs> = new {
+local withUploadTestResultHtml: Mixin<Workflow.Jobs> = (it) -> (it) {
   when (!testReports.html.isEmpty) {
-    [[true]] {
-      steps {
-        new Artifact.Upload {
-          name = "Upload Test Result HTML"
-          `if` = "!cancelled()"
-          with {
-            name = TEST_RESULT_HTML_ARTIFACT_NAME
-            path = testReports.html.join("\n")
+    for (key, _ in it) {
+      when (testReports.includes(key)) {
+        [key] {
+          steps {
+            new Artifact.Upload {
+              name = "Upload Test Result HTML"
+              `if` = "!cancelled()"
+              with {
+                name = TEST_RESULT_HTML_ARTIFACT_NAME
+                path = testReports.html.join("\n")
+              }
+            }
           }
         }
       }
@@ -299,35 +325,39 @@ local withUploadTestResultHtml: Mixin<Workflow.Jobs> = new {
 }
 
 local withPublishTestResultsForMatrixBuild: Mixin<Workflow.Jobs> = (it) -> (it) {
-  [[true]] {
-    local self = this
-    steps {
-      // matrix build; upload test results as an artifact
-      new Artifact.Upload {
-        name = "Upload Test Result XML"
-        with {
-          name = "\(TEST_RESULT_XML_ARTIFACT_NAME)-\(self.strategy.matrix.keys.join("-"))"
-          path = testReports.junit.join("\n")
+  for (key, _ in it) {
+    when (testReports.includes(key)) {
+      [key] {
+        local self = this
+        steps {
+          // matrix build; upload test results as an artifact
+          new Artifact.Upload {
+            name = "Upload Test Result XML"
+            `if` = "!cancelled()"
+            with {
+              name = "\(TEST_RESULT_XML_ARTIFACT_NAME)-\(self.strategy.matrix.keys.join("-"))"
+              path = testReports.junit.join("\n")
+            }
+          }
         }
-        `if` = "!cancelled()"
       }
-    }
-  }
-  ["publish-test-results"] {
-    needs {
-      ...it.keys
-    }
-    `runs-on` = "ubuntu-latest"
-    permissions {
-      checks = "write"
-    }
-    steps {
-      new PublishUnitTestResult.Action {
-        name = "Publish test results"
-        `if` = "!cancelled()"
-        with {
-          file_patterns = testReports.junit
-          comment_mode = "off"
+      ["publish-test-results"] {
+        needs {
+          ...it.keys
+        }
+        `runs-on` = "ubuntu-latest"
+        permissions {
+          checks = "write"
+        }
+        steps {
+          new PublishUnitTestResult.Action {
+            name = "Publish test results"
+            `if` = "!cancelled()"
+            with {
+              file_patterns = testReports.junit
+              comment_mode = "off"
+            }
+          }
         }
       }
     }
@@ -343,17 +373,21 @@ local withPublishTestResults: Mixin<Workflow.Jobs> = (it) ->
       it |> withPublishTestResultsForMatrixBuild
     else
       (it) {
-        [[true]] {
-          permissions {
-            checks = "write"
-          }
-          steps {
-            new PublishUnitTestResult.Action {
-              name = "Publish test results"
-              `if` = "!cancelled()"
-              with {
-                file_patterns = testReports.junit
-                comment_mode = "off"
+        for (key, _ in it) {
+          when (testReports.includes(key)) {
+            [key] {
+              permissions {
+                checks = "write"
+              }
+              steps {
+                new PublishUnitTestResult.Action {
+                  name = "Publish test results"
+                  `if` = "!cancelled()"
+                  with {
+                    file_patterns = testReports.junit
+                    comment_mode = "off"
+                  }
+                }
               }
             }
           }
@@ -361,7 +395,11 @@ local withPublishTestResults: Mixin<Workflow.Jobs> = (it) ->
       }
 
 local function withTriggerWorkflows(triggerType: String): Mixin<Workflow.Jobs> = (it) -> (it) {
-  when (triggerType == triggerDocsBuild || triggerType == triggerPackageDocsBuild || triggerDocsBuild == "both") {
+  when (
+    triggerType == triggerDocsBuild
+      || triggerType == triggerPackageDocsBuild
+      || triggerDocsBuild == "both"
+  ) {
     ["trigger-downstream-builds"] {
       needs {
         ...it.keys
@@ -385,7 +423,8 @@ local function withTriggerWorkflows(triggerType: String): Mixin<Workflow.Jobs> =
             env {
               ["GH_TOKEN"] = "${{ steps.app-token.outputs.token }}"
             }
-            run = #"""
+            run =
+              #"""
               gh workflow run \
                 --repo apple/pkl-lang.org \
                 --ref main \
@@ -400,7 +439,8 @@ local function withTriggerWorkflows(triggerType: String): Mixin<Workflow.Jobs> =
             env {
               ["GH_TOKEN"] = "${{ steps.app-token.outputs.token }}"
             }
-            run = #"""
+            run =
+              #"""
               gh workflow run \
                 --repo apple/pkl-package-docs \
                 --ref main \
