@@ -21,5 +21,7 @@ package {
 }
 
 dependencies {
-  ["gha"] = import("../../../pkl-github/PklProject")
+  ["gha"] {
+    uri = "package://pkg.pkl-lang.org/github.com/stefma/pkl-gha/com.github.action@0.0.6"
+  }
 }
