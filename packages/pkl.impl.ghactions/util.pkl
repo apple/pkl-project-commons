@@ -1,0 +1,37 @@
+//===----------------------------------------------------------------------===//
+// Copyright © 2025 Apple Inc. and the Pkl project authors. All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//===----------------------------------------------------------------------===//
+import "@gha/Workflow.pkl"
+
+typealias OS = "windows" | "macOS" | "linux"
+
+local function determineOSRunsOn(input: String | Workflow.Machine): OS? =
+  let (effectiveStr = if (input is String) input else input.name)
+    if (effectiveStr.contains("windows"))
+      "windows"
+    else if (effectiveStr.contains("macos"))
+      "macOS"
+    else if (effectiveStr.contains("ubuntu"))
+      "linux"
+    else
+      null
+
+/// Tries to determine the OS for a workflow job.
+function determineOS(job: Workflow.Job): OS? =
+  let (runsOn = job.`runs-on`)
+    if (runsOn is String | Workflow.Machine)
+      determineOSRunsOn(runsOn)
+    else
+      runsOn.fold(null, (os, runsOn) -> os ?? determineOSRunsOn(runsOn))

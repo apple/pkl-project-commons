@@ -20,6 +20,7 @@ import "@gha/Context.pkl"
 import "@gha/Workflow.pkl"
 
 import "actions/PublishUnitTestResult.pkl"
+import "util.pkl"
 
 /// The workflow that runs during pull requests.
 ///
@@ -377,7 +378,7 @@ local withPublishTestResults: Mixin<Workflow.Jobs> = (it) ->
       it |> withPublishTestResultsForMatrixBuild
     else
       (it) {
-        for (key, _ in it) {
+        for (key, job in it) {
           when (testReports.includes(key)) {
             [key] {
               permissions {
@@ -386,6 +387,8 @@ local withPublishTestResults: Mixin<Workflow.Jobs> = (it) ->
               steps {
                 new PublishUnitTestResult.Action {
                   name = "Publish test results"
+                  // if we can't figure out the correct OS, just try to use the linux version.
+                  os = util.determineOS(job) ?? "linux"
                   `if` = "!cancelled()"
                   with {
                     file_patterns = testReports.junit

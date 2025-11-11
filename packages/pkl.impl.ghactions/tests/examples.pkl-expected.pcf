@@ -1,0 +1,140 @@
+examples {
+  ["macosBuild.pkl -- workflows/prb.yml"] {
+    """
+    # Do not modify!
+    # This file was generated from a template using https://github.com/StefMa/pkl-gha
+    
+    name: Pull Request
+    'on':
+      pull_request: {}
+    permissions:
+      contents: read
+    jobs:
+      do-build:
+        runs-on:
+        - macos
+        - self-hosted
+        steps:
+        - run: echo hello
+        - name: Upload Test Result XML
+          if: '!cancelled()'
+          uses: actions/upload-artifact@v5
+          with:
+            name: test-results-xml
+            path: '**.xml'
+        - name: Upload event file
+          if: '!cancelled()'
+          uses: actions/upload-artifact@v5
+          with:
+            name: test-results-event-file
+            path: ${{ github.event_path }}
+    
+    """
+  }
+  ["macosBuild.pkl -- workflows/main.yml"] {
+    """
+    # Do not modify!
+    # This file was generated from a template using https://github.com/StefMa/pkl-gha
+    
+    name: Build (main)
+    'on':
+      push:
+        branches:
+        - main
+        tags-ignore:
+        - '**'
+    permissions:
+      contents: read
+    jobs:
+      do-build:
+        permissions:
+          checks: write
+        runs-on:
+        - macos
+        - self-hosted
+        steps:
+        - run: echo hello
+        - name: Publish test results
+          if: '!cancelled()'
+          uses: EnricoMi/publish-unit-test-result-action/macos@v2
+          with:
+            comment_mode: 'off'
+            files: '**.xml'
+    
+    """
+  }
+  ["macosBuild.pkl -- workflows/build.yml"] {
+    """
+    # Do not modify!
+    # This file was generated from a template using https://github.com/StefMa/pkl-gha
+    
+    name: Build
+    'on':
+      push:
+        branches-ignore:
+        - main
+        - release/*
+        tags-ignore:
+        - '**'
+    permissions:
+      contents: read
+    jobs:
+      do-build:
+        permissions:
+          checks: write
+        runs-on:
+        - macos
+        - self-hosted
+        steps:
+        - run: echo hello
+        - name: Publish test results
+          if: '!cancelled()'
+          uses: EnricoMi/publish-unit-test-result-action/macos@v2
+          with:
+            comment_mode: 'off'
+            files: '**.xml'
+    
+    """
+  }
+  ["macosBuild.pkl -- workflows/test_report.yml"] {
+    """
+    # Do not modify!
+    # This file was generated from a template using https://github.com/StefMa/pkl-gha
+    
+    name: PR Test Reports
+    'on':
+      workflow_run:
+        types:
+        - completed
+        workflows:
+        - Pull Request
+    permissions:
+      contents: read
+    jobs:
+      test-results:
+        name: Test Results
+        if: github.event.workflow_run.conclusion == 'success' || github.event.workflow_run.conclusion == 'failure'
+        permissions:
+          actions: read
+          checks: write
+        runs-on: ubuntu-latest
+        steps:
+        - name: Download artifacts
+          uses: dawidd6/action-download-artifact@v11
+          with:
+            path: artifacts
+            name: test-results-.*
+            name_is_regex: true
+            run_id: ${{ github.event.workflow_run.id }}
+        - name: Publish test results
+          uses: EnricoMi/publish-unit-test-result-action@v2
+          with:
+            commit: ${{ github.event.workflow_run.head_sha }}
+            comment_mode: 'off'
+            files: artifacts/**/*.xml
+            event_file: artifacts/test-results-event-file/event.json
+            event_name: ${{ github.event.workflow_run.event }}
+    
+    """
+  }
+}
