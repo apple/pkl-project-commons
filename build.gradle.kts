@@ -123,10 +123,10 @@ val prepareCiGit by tasks.registering {
     providers.exec {
       commandLine("git", "config", "user.email", "pkl-oss@groups.apple.com")
     }.result.get()
+    providers.exec {
+      commandLine("git", "config", "user.name", "The Pkl Team (automation)")
+    }.result.get()
   }
-  providers.exec {
-    commandLine("git", "config", "user.name", "The Pkl Team (automation)")
-  }.result.get()
 }
 
 val prepareReleases by tasks.registering {
@@ -158,11 +158,8 @@ val prepareReleases by tasks.registering {
         println("⏩")
         continue
       }
-      val taskOutput = StringBuilder()
       val execOutput = providers.exec {
         commandLine("git", "tag", "-l", pkg)
-        logging.addStandardOutputListener { taskOutput.append(it) }
-        standardOutput = OutputStream.nullOutputStream()
       }
       execOutput.result.get() // run the task
       if (execOutput.standardOutput.asText.get().contains(pkg)) {
