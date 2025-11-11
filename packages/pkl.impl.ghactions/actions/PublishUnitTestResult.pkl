@@ -18,7 +18,26 @@ module pkl.impl.ghactions.PublishUnitTestResult
 import "@gha/Workflow.pkl"
 
 class Action extends Workflow.TypedStep {
-  abstract fixed uses = "EnricoMi/publish-unit-test-result-action@v2"
+  abstract fixed uses =
+    let (
+      osPart =
+        if (os == "linux")
+          ""
+        else if (os == "macOS")
+          "/macos"
+        else if (noPowershell)
+          "/windows/bash"
+        else
+          "/windows"
+    )
+      "EnricoMi/publish-unit-test-result-action\(osPart)@v2"
+
+  /// The OS that this action runs on.
+  os: "linux" | "macOS" | "windows" = "linux"
+
+  /// Running on Windows without PowerShell installed
+  noPowershell: Boolean(implies(os == "windows")) = false
+
   with: Inputs?
 }
 
