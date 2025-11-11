@@ -12,7 +12,7 @@ import kotlin.math.log10
 plugins {
   kotlin("jvm").version(libs.versions.kotlin)
   alias(libs.plugins.pkl)
-  alias(libs.plugins.spotless)
+  id("com.diffplug.spotless")
 }
 
 val originalRemoteName = System.getenv("PKL_ORIGINAL_REMOTE_NAME") ?: "origin"
@@ -58,6 +58,7 @@ spotless {
             //===----------------------------------------------------------------------===//
         """.trimIndent(), "(/// |/\\*\\*|module |import |amends |(\\w+))")
     target("**/*.pkl", "**/PklProject")
+    addStep(PklFormatterStep().create())
   }
 }
 
@@ -118,12 +119,14 @@ val isInCircleCi = System.getenv("CIRCLE_PROJECT_REPONAME") != null
 
 val prepareCiGit by tasks.registering {
   enabled = isInCircleCi
-  exec {
-    commandLine("git", "config", "user.email", "pkl-oss@groups.apple.com")
+  doLast {
+    providers.exec {
+      commandLine("git", "config", "user.email", "pkl-oss@groups.apple.com")
+    }.result.get()
   }
-  exec {
+  providers.exec {
     commandLine("git", "config", "user.name", "The Pkl Team (automation)")
-  }
+  }.result.get()
 }
 
 val prepareReleases by tasks.registering {
@@ -156,12 +159,13 @@ val prepareReleases by tasks.registering {
         continue
       }
       val taskOutput = StringBuilder()
-      exec {
+      val execOutput = providers.exec {
         commandLine("git", "tag", "-l", pkg)
         logging.addStandardOutputListener { taskOutput.append(it) }
         standardOutput = OutputStream.nullOutputStream()
       }
-      if (taskOutput.contains(pkg)) {
+      execOutput.result.get() // run the task
+      if (execOutput.standardOutput.asText.get().contains(pkg)) {
         println("☑️")
         continue
       }
