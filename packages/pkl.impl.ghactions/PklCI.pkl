@@ -195,7 +195,21 @@ local effectivePrbWorkflow = (prb) {
   on {
     pull_request {}
   }
-  jobs = super.jobs |> withUploadTestResultXml |> withUploadTestResultHtml
+  jobs = (super.jobs |> withUploadTestResultXml |> withUploadTestResultHtml) {
+    ["upload-event-file"] {
+      `runs-on` = "ubuntu-latest"
+      steps {
+        new Artifact.Upload {
+          name = "Upload event file"
+          `if` = "!cancelled()"
+          with {
+            name = TEST_RESULT_EVENT_FILE_ARTIFACT_NAME
+            path = Context.github.eventPath
+          }
+        }
+      }
+    }
+  }
 }
 
 local effectiveReleaseWorkflow = (release) {
@@ -289,16 +303,8 @@ local withUploadTestResultXml: Mixin<Workflow.Jobs> = (it) -> (it) {
               name = "Upload Test Result XML"
               `if` = "!cancelled()"
               with {
-                name = TEST_RESULT_XML_ARTIFACT_NAME
+                name = "\(TEST_RESULT_XML_ARTIFACT_NAME)-\(key)"
                 path = testReports.junit.join("\n")
-              }
-            }
-            new Artifact.Upload {
-              name = "Upload event file"
-              `if` = "!cancelled()"
-              with {
-                name = TEST_RESULT_EVENT_FILE_ARTIFACT_NAME
-                path = Context.github.eventPath
               }
             }
           }
@@ -318,7 +324,7 @@ local withUploadTestResultHtml: Mixin<Workflow.Jobs> = (it) -> (it) {
               name = "Upload Test Result HTML"
               `if` = "!cancelled()"
               with {
-                name = TEST_RESULT_HTML_ARTIFACT_NAME
+                name = "\(TEST_RESULT_HTML_ARTIFACT_NAME)-\(key)"
                 path = testReports.html.join("\n")
               }
             }
@@ -340,29 +346,33 @@ local withPublishTestResultsForMatrixBuild: Mixin<Workflow.Jobs> = (it) -> (it) 
             name = "Upload Test Result XML"
             `if` = "!cancelled()"
             with {
-              name = "\(TEST_RESULT_XML_ARTIFACT_NAME)-\(self.strategy.matrix.keys.join("-"))"
+              name =
+                "\(TEST_RESULT_XML_ARTIFACT_NAME)-\(key)-\(self.strategy.matrix.keys.join("-"))"
               path = testReports.junit.join("\n")
             }
           }
         }
       }
-      ["publish-test-results"] {
-        needs {
-          ...it.keys
+    }
+  }
+  ["publish-test-results"] {
+    needs = it.keys.filter((key) -> testReports.includes(key)).toListing()
+    `runs-on` = "ubuntu-latest"
+    permissions {
+      checks = "write"
+    }
+    steps {
+      new Artifact.Download {
+        with {
+          pattern = "\(TEST_RESULT_XML_ARTIFACT_NAME)-*"
         }
-        `runs-on` = "ubuntu-latest"
-        permissions {
-          checks = "write"
-        }
-        steps {
-          new PublishUnitTestResult.Action {
-            name = "Publish test results"
-            `if` = "!cancelled()"
-            with {
-              file_patterns = testReports.junit
-              comment_mode = "off"
-            }
-          }
+      }
+      new PublishUnitTestResult.Action {
+        name = "Publish test results"
+        `if` = "!cancelled()"
+        with {
+          file_patterns = testReports.junit
+          comment_mode = "off"
         }
       }
     }
