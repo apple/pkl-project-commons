@@ -27,5 +27,7 @@ facts {
     util.determineOS(new Workflow.Job { `runs-on` = new Listing { "windows-latest"; "x86" } })
       == "windows"
     util.determineOS(new Workflow.Job { `runs-on` = new Workflow.MacOsLatest {} }) == "macOS"
+    util.determineOS(new Workflow.Job { `runs-on` = new Listing { "self-hosted"; "macos" } })
+      == "macOS"
   }
 }
