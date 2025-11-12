@@ -20,8 +20,11 @@ examples {
           if: '!cancelled()'
           uses: actions/upload-artifact@v5
           with:
-            name: test-results-xml
+            name: test-results-xml-do-build
             path: '**.xml'
+      upload-event-file:
+        runs-on: ubuntu-latest
+        steps:
         - name: Upload event file
           if: '!cancelled()'
           uses: actions/upload-artifact@v5
