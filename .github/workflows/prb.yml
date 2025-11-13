@@ -4,6 +4,9 @@
 name: Pull Request
 'on':
   pull_request: {}
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 permissions:
   contents: read
 jobs:
@@ -24,11 +27,14 @@ jobs:
       if: '!cancelled()'
       uses: actions/upload-artifact@v5
       with:
-        name: test-results-xml
+        name: test-results-xml-build-and-test
         path: build/test-results/**/*.xml
+  upload-event-file:
+    runs-on: ubuntu-latest
+    steps:
     - name: Upload event file
       if: '!cancelled()'
       uses: actions/upload-artifact@v5
       with:
-        name: Event File
+        name: test-results-event-file
         path: ${{ github.event_path }}
