@@ -32,11 +32,17 @@ fixed downloadUrl: String = "https://github.com/apple/pkl/releases/download/\(ve
 fixed step: Workflow.Step = new {
   id = "setup-pkl"
   shell = "bash"
+  env {
+    ["PKL_VERSION"] = version
+    ["PKL_FILENAME"] = "pkl\(fileExtension)"
+    ["PKL_DOWNLOAD_URL"] = downloadUrl
+  }
+  // language=bash
   run =
     """
-    DIR=$(mktemp /tmp/pkl-\(version)-XXXXXX)"
-    PKL_EXEC="$DIR/pkl\(fileExtension)"
-    curl -sfL -o $PKL_EXEC "\(downloadUrl)"
+    DIR="$(mktemp /tmp/pkl-$PKL_VERSION-XXXXXX)"
+    PKL_EXEC="$DIR/$PKL_FILENAME"
+    curl -sfL -o $PKL_EXEC "$PKL_DOWNLOAD_URL"
     chmod +x $PKL_EXEC
     echo "$DIR" >> "$GITHUB_PATH"
     echo "pkl_exec=$PKL_EXEC" >> "$GITHUB_OUTPUT"
