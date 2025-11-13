@@ -421,33 +421,33 @@ local withPublishTestResultsForMultipleJobs: Mixin<Workflow.Jobs> = (it) -> (it)
 local withPublishTestResults: Mixin<Workflow.Jobs> = (it) ->
   if (testReports.junit.isEmpty)
     it
-  else if (it.length > 1 || it.any((_, job) -> job.strategy?.matrix != null))
-    // if there are matrix builds, we need to publish test results as an xml artifact, then publish as a separate job.
-    it |> withPublishTestResultsForMultipleJobs
   else
-    (it) {
-      for (key, job in it) {
-        when (testReports.includes(key)) {
-          [key] {
-            permissions {
-              checks = "write"
-            }
-            steps {
-              new PublishUnitTestResult.Action {
-                name = "Publish test results"
-                // if we can't figure out the correct OS, just try to use the linux version.
-                os = util.determineOS(job) ?? "linux"
-                `if` = "!cancelled()"
-                with {
-                  file_patterns = testReports.junit
-                  comment_mode = "off"
+    let (jobsWithTests = it.toMap().filter((key, _) -> testReports.includes(key)))
+      if (jobsWithTests.length > 1 || jobsWithTests.any((_, job) -> job.strategy?.matrix != null))
+        // if there are matrix builds, we need to publish test results as an xml artifact, then publish as a separate job.
+        it |> withPublishTestResultsForMultipleJobs
+      else
+        (it) {
+          for (key, job in jobsWithTests) {
+            [key] {
+              permissions {
+                checks = "write"
+              }
+              steps {
+                new PublishUnitTestResult.Action {
+                  name = "Publish test results"
+                  // if we can't figure out the correct OS, just try to use the linux version.
+                  os = util.determineOS(job) ?? "linux"
+                  `if` = "!cancelled()"
+                  with {
+                    file_patterns = testReports.junit
+                    comment_mode = "off"
+                  }
                 }
               }
             }
           }
         }
-      }
-    }
 
 local function withTriggerWorkflows(triggerType: String): Mixin<Workflow.Jobs> = (it) -> (it) {
   when (
