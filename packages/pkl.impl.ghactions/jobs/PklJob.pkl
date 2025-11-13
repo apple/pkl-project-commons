@@ -13,15 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //===----------------------------------------------------------------------===//
-/// Abstractions for working with GitHub Actions for the Pkl team.
-amends "../basePklProject.pkl"
+abstract module pkl.impl.ghactions.jobs.PklJob
 
-package {
-  version = "0.7.0"
-}
+import "@gha/Workflow.pkl"
 
-dependencies {
-  ["gha"] {
-    uri = "package://pkg.pkl-lang.org/github.com/stefma/pkl-gha/com.github.action@0.0.6"
-  }
-}
+/// The underlying job output.
+fixed job: Workflow.Job
