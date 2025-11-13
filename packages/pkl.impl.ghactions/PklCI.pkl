@@ -521,11 +521,9 @@ output {
       renderer {
         converters {
           [Workflow.DefaultJob] = (it) ->
-            if (it.name?.startsWith("hawkeye-check:") ?? false)
-              it
-                .toMap()
-                .put("container", Map("image", it.name.splitLimit(":", 2).last))
-                .put("name", "hawkeye-check")
+            if (it.name?.startsWith("container:") ?? false)
+              let (nameParts = it.name.splitLimit(":", 3))
+                it.toMap().put("container", Map("image", nameParts[2])).put("name", nameParts[1])
             else
               it
         }
