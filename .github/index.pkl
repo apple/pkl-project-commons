@@ -51,16 +51,7 @@ prb = buildAndTest
 build = buildAndTest
 
 // note: we deploy packages from our own machines, not from CI.
-//
-// e.g.
-// ```
-// pkl project package packages/pkl.impl.ghactions/
-// gh release create \
-//    pkl.impl.ghactions@0.4.2 --title pkl.impl.ghactions@0.4.2 \
-//    --target $(git rev-parse HEAD) \
-//    --notes "Release of pkl.impl.ghactions@0.4.2" \
-//    .out/pkl.impl.ghactions@0.4.2/*
-// ```
+// see README.adoc for instructions on publishing.
 main = buildAndTest
 
 testReports {

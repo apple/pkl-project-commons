@@ -11,6 +11,31 @@ if [ -z "$PACKAGE" ]; then
   exit 1
 fi
 
+# Validate we're on the main branch
+CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+if [ "$CURRENT_BRANCH" != "main" ]; then
+  echo "Error: Must be on 'main' branch (currently on '$CURRENT_BRANCH')"
+  exit 1
+fi
+
+# Fetch latest from upstream
+echo "Fetching latest from upstream..."
+git fetch upstream main
+
+# Check if local main is up to date with upstream/main
+LOCAL_COMMIT=$(git rev-parse main)
+UPSTREAM_COMMIT=$(git rev-parse upstream/main)
+
+if [ "$LOCAL_COMMIT" != "$UPSTREAM_COMMIT" ]; then
+  echo "Error: Local 'main' branch is not up to date with 'upstream/main'"
+  echo "Local:    $LOCAL_COMMIT"
+  echo "Upstream: $UPSTREAM_COMMIT"
+  echo ""
+  echo "Please update your local main branch:"
+  echo "  git pull upstream main"
+  exit 1
+fi
+
 # Validate package directory exists
 if [ ! -d "packages/$PACKAGE" ]; then
   echo "Error: Package directory 'packages/$PACKAGE' does not exist"
