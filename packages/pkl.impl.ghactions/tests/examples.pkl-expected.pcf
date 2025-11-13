@@ -7,6 +7,9 @@ examples {
     name: Pull Request
     'on':
       pull_request: {}
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
     permissions:
       contents: read
     jobs:
@@ -46,6 +49,9 @@ examples {
         - main
         tags-ignore:
         - '**'
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: false
     permissions:
       contents: read
     jobs:
@@ -79,6 +85,9 @@ examples {
         - release/*
         tags-ignore:
         - '**'
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: false
     permissions:
       contents: read
     jobs:
