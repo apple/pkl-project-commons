@@ -3,3 +3,14 @@
 This repository houses libraries that are implementation details for the Pkl project.
 
 These libraries are not meant for general use.
+
+== Publishing packages
+
+To publish a package, run `./scripts/publish_package.sh` with the name of the package.
+
+For example:
+
+[source,bash]
+----
+./scripts/publish_package.sh pkl.impl.ghactions
+----
