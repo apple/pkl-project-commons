@@ -20,7 +20,6 @@ import "@gha/Context.pkl"
 import "@gha/Workflow.pkl"
 
 import "actions/PublishUnitTestResult.pkl"
-import "jobs/HawkeyeCheck.pkl"
 import "util.pkl"
 
 /// The workflow that runs during pull requests.
@@ -30,6 +29,7 @@ import "util.pkl"
 ///   * [Workflow.On.pull_request]
 ///   * [Workflow.name]
 ///   * [Workflow.permissions]
+///   * [Workflow.concurrency]
 ///
 /// This turns into a workflow called "Pull Request".
 prb: Workflow
@@ -40,6 +40,7 @@ prb: Workflow
 ///   * [Workflow.On.push]
 ///   * [Workflow.name]
 ///   * [Workflow.permissions]
+///   * [Workflow.concurrency]
 ///
 /// This turns into a workflow called "Build (main)".
 main: Workflow
@@ -50,6 +51,7 @@ main: Workflow
 ///   * [Workflow.On.push]
 ///   * [Workflow.name]
 ///   * [Workflow.permissions]
+///   * [Workflow.concurrency]
 ///
 /// This turns into a workflow called "Build".
 build: Workflow
@@ -60,6 +62,7 @@ build: Workflow
 ///   * [Workflow.On.push]
 ///   * [Workflow.name]
 ///   * [Workflow.permissions]
+///   * [Workflow.concurrency]
 ///
 /// This turns into a workflow called "Release".
 release: Workflow?
@@ -70,6 +73,7 @@ release: Workflow?
 ///   * [Workflow.On.push]
 ///   * [Workflow.name]
 ///   * [Workflow.permissions]
+///   * [Workflow.concurrency]
 ///
 /// This turns into a workflow called "Build (release branch)".
 releaseBranch: Workflow?
@@ -127,6 +131,11 @@ local effectiveBuildWorkflow = (build) {
   permissions = new {
     contents = "read"
   }
+  concurrency = new {
+    // only run once at a time per branch
+    group = "\(Context.github.workflow)-\(Context.github.ref)"
+    `cancel-in-progress` = false // TODO remove once correctly marked nullable in upstream pkl-gha
+  }
   on {
     push {
       `branches-ignore` {
@@ -145,6 +154,11 @@ local effectiveReleaseBranchWorkflow = (build) {
   name = "Build (release branch)"
   permissions = new {
     contents = "read"
+  }
+  concurrency = new {
+    // only run once at a time per release branch
+    group = "\(Context.github.workflow)-\(Context.github.ref)"
+    `cancel-in-progress` = true
   }
   on {
     push {
@@ -167,6 +181,11 @@ local effectiveMainWorkflow = (main) {
   name = "Build (main)"
   permissions = new {
     contents = "read"
+  }
+  concurrency = new {
+    // only run once at a time
+    group = "\(Context.github.workflow)-\(Context.github.ref)"
+    `cancel-in-progress` = false // TODO remove once correctly marked nullable in upstream pkl-gha
   }
   on {
     push {
@@ -193,6 +212,11 @@ local effectivePrbWorkflow = (prb) {
   permissions = new {
     contents = "read"
   }
+  concurrency = new {
+    // cancel running workflows for the same PR
+    group = "\(Context.github.workflow)-\(Context.github.ref)"
+    `cancel-in-progress` = true
+  }
   on {
     pull_request {}
   }
@@ -217,6 +241,11 @@ local effectiveReleaseWorkflow = (release) {
   name = "Release"
   permissions = new {
     contents = "read"
+  }
+  concurrency = new {
+    // only run once at a time per tag
+    group = "\(Context.github.workflow)-\(Context.github.ref)"
+    `cancel-in-progress` = false // TODO remove once correctly marked nullable in upstream pkl-gha
   }
   on {
     push {
