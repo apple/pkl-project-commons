@@ -25,6 +25,7 @@ examples {
           with:
             name: test-results-xml-do-build
             path: '**.xml'
+            if-no-files-found: ignore
       upload-event-file:
         runs-on: ubuntu-latest
         steps:
