@@ -335,6 +335,7 @@ local withUploadTestResultXml: Mixin<Workflow.Jobs> = (it) -> (it) {
               with {
                 name = "\(TEST_RESULT_XML_ARTIFACT_NAME)-\(key)"
                 path = testReports.junit.join("\n")
+                `if-no-files-found` = "ignore"
               }
             }
           }
@@ -356,6 +357,7 @@ local withUploadTestResultHtml: Mixin<Workflow.Jobs> = (it) -> (it) {
               with {
                 name = "\(TEST_RESULT_HTML_ARTIFACT_NAME)-\(key)"
                 path = testReports.html.join("\n")
+                `if-no-files-found` = "ignore"
               }
             }
           }
@@ -365,7 +367,7 @@ local withUploadTestResultHtml: Mixin<Workflow.Jobs> = (it) -> (it) {
   }
 }
 
-local withPublishTestResultsForMatrixBuild: Mixin<Workflow.Jobs> = (it) -> (it) {
+local withPublishTestResultsForMultipleJobs: Mixin<Workflow.Jobs> = (it) -> (it) {
   for (key, _ in it) {
     when (testReports.includes(key)) {
       [key] {
@@ -377,7 +379,14 @@ local withPublishTestResultsForMatrixBuild: Mixin<Workflow.Jobs> = (it) -> (it) 
             `if` = "!cancelled()"
             with {
               name =
-                "\(TEST_RESULT_XML_ARTIFACT_NAME)-\(key)-\(self.strategy.matrix.keys.join("-"))"
+                let (
+                  suffix =
+                    if (self.strategy?.matrix != null)
+                      "-" + self.strategy.matrix.keys.join("-")
+                    else
+                      ""
+                )
+                  "\(TEST_RESULT_XML_ARTIFACT_NAME)-\(key)\(suffix)"
               path = testReports.junit.join("\n")
             }
           }
@@ -413,13 +422,13 @@ local withPublishTestResults: Mixin<Workflow.Jobs> = (it) ->
   if (testReports.junit.isEmpty)
     it
   else
-    // if there are matrix builds, we need to publish test results as an xml artifact, then publish as a separate job.
-    if (it.any((_, job) -> job.strategy?.matrix != null))
-      it |> withPublishTestResultsForMatrixBuild
-    else
-      (it) {
-        for (key, job in it) {
-          when (testReports.includes(key)) {
+    let (jobsWithTests = it.toMap().filter((key, _) -> testReports.includes(key)))
+      if (jobsWithTests.length > 1 || jobsWithTests.any((_, job) -> job.strategy?.matrix != null))
+        // if there are matrix builds, we need to publish test results as an xml artifact, then publish as a separate job.
+        it |> withPublishTestResultsForMultipleJobs
+      else
+        (it) {
+          for (key, job in jobsWithTests) {
             [key] {
               permissions {
                 checks = "write"
@@ -439,7 +448,6 @@ local withPublishTestResults: Mixin<Workflow.Jobs> = (it) ->
             }
           }
         }
-      }
 
 local function withTriggerWorkflows(triggerType: String): Mixin<Workflow.Jobs> = (it) -> (it) {
   when (
