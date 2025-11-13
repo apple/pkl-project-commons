@@ -13,15 +13,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //===----------------------------------------------------------------------===//
-/// Abstractions for working with GitHub Actions for the Pkl team.
-amends "../basePklProject.pkl"
+module pkl.impl.ghactions.helpers
 
-package {
-  version = "0.5.0"
-}
+import "@gha/Context.pkl"
+import "@gha/Workflow.pkl"
 
-dependencies {
-  ["gha"] {
-    uri = "package://pkg.pkl-lang.org/github.com/stefma/pkl-gha/com.github.action@0.0.6"
+const withMavenPublishSecrets: Mixin<Workflow.Step> = new {
+  env {
+    ["ORG_GRADLE_PROJECT_signingKeyId"] = Context.secrets("ORG_GRADLE_PROJECT_SIGNINGKEYID")
+    ["ORG_GRADLE_PROJECT_signingKey"] = Context.secrets("ORG_GRADLE_PROJECT_SIGNINGKEY")
+    ["ORG_GRADLE_PROJECT_signingPassword"] = Context.secrets("ORG_GRADLE_PROJECT_SIGNINGPASSWORD")
+    ["ORG_GRADLE_PROJECT_sonatypePassword"] = Context.secrets("ORG_GRADLE_PROJECT_SONATYPEPASSWORD")
+    ["ORG_GRADLE_PROJECT_sonatypeUsername"] = Context.secrets("ORG_GRADLE_PROJECT_SONATYPEUSERNAME")
   }
 }

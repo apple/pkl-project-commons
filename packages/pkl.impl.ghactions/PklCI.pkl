@@ -20,6 +20,7 @@ import "@gha/Context.pkl"
 import "@gha/Workflow.pkl"
 
 import "actions/PublishUnitTestResult.pkl"
+import "jobs/HawkeyeCheck.pkl"
 import "util.pkl"
 
 /// The workflow that runs during pull requests.
@@ -484,6 +485,22 @@ output {
     }
     when (!testReports.junit.isEmpty) {
       ["workflows/test_report.yml"] = testReportWorkflow.output
+    }
+  } {
+    // TODO remove when pkl-gha supports Job.container
+    [[true]] {
+      renderer {
+        converters {
+          [Workflow.DefaultJob] = (it) ->
+            if (it.name?.startsWith("hawkeye-check:") ?? false)
+              it
+                .toMap()
+                .put("container", Map("image", it.name.splitLimit(":", 2).last))
+                .put("name", "hawkeye-check")
+            else
+              it
+        }
+      }
     }
   }
 }
