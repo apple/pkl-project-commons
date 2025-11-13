@@ -36,7 +36,7 @@ fixed job: Workflow.Job = new {
   //   image = self.image
   // }
   `runs-on` = "ubuntu-latest"
-  name = "hawkeye-check:\(image)"
+  name = "container:hawkeye-check:\(image)"
   steps {
     new Common.Checkout {
       with {

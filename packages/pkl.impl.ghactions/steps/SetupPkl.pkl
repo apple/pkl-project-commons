@@ -13,15 +13,32 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //===----------------------------------------------------------------------===//
-/// Abstractions for working with GitHub Actions for the Pkl team.
-amends "../basePklProject.pkl"
+module pkl.impl.ghactions.steps.SetupPkl
 
-package {
-  version = "0.6.0"
-}
+import "@gha/Workflow.pkl"
 
-dependencies {
-  ["gha"] {
-    uri = "package://pkg.pkl-lang.org/github.com/stefma/pkl-gha/com.github.action@0.0.6"
-  }
+version: String
+
+platform: *"linux" | "alpine-linux" | "macos" | "windows"
+
+arch: *"amd64" | "aarch64"
+
+fixed fileExtension: String = if (platform == "windows") ".exe" else ""
+
+fixed filename: String = "pkl-\(platform)-\(arch)\(fileExtension)"
+
+fixed downloadUrl: String = "https://github.com/apple/pkl/releases/download/\(version)/\(filename)"
+
+fixed step: Workflow.Step = new {
+  id = "setup-pkl"
+  shell = "bash"
+  run =
+    """
+    DIR=$(mktemp /tmp/pkl-\(version)-XXXXXX)"
+    PKL_EXEC="$DIR/pkl\(fileExtension)"
+    curl -sfL -o $PKL_EXEC "\(downloadUrl)"
+    chmod +x $PKL_EXEC
+    echo "$DIR" >> "$GITHUB_PATH"
+    echo "pkl_exec=$PKL_EXEC" >> "$GITHUB_OUTPUT"
+    """
 }
