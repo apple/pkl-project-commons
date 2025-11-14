@@ -37,6 +37,7 @@ fixed step: Workflow.Step = new {
     ["PKL_FILENAME"] = "pkl\(fileExtension)"
     ["PKL_DOWNLOAD_URL"] = downloadUrl
   }
+  name = "Setup Pkl"
   // language=bash
   run =
     """

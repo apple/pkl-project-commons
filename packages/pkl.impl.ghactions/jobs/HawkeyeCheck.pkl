@@ -15,8 +15,9 @@
 //===----------------------------------------------------------------------===//
 module pkl.impl.ghactions.jobs.HawkeyeCheck
 
+extends "PklJob.pkl"
+
 import "@gha/actions/Common.pkl"
-import "@gha/Workflow.pkl"
 
 image: String =
   "ghcr.io/korandoru/hawkeye@sha256:c3ab994c0d81f3d116aabf9afc534e18648e3e90d7525d741c1e99dd8166ec85"
@@ -27,9 +28,7 @@ failIfUnknown: Boolean = true
 
 failIfMissing: Boolean = false
 
-local self = this
-
-fixed job: Workflow.Job = new {
+fixed job {
   // TODO when upstream pkl-gha supports it
   // This is currently injected in ../PklCI.pkl via an output converter
   // container {

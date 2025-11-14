@@ -21,7 +21,18 @@ import "@gha/Workflow.pkl"
 
 import "actions/PublishUnitTestResult.pkl"
 import "helpers.pkl"
+import "jobs/CheckPklEval.pkl"
 import "util.pkl"
+
+local checkPklGHADefinitions: CheckPklEval = new {
+  command {
+    modules {
+      ".github/index.pkl"
+    }
+    projectDir = ".github/"
+    multipleFileOutputPath = ".github/"
+  }
+}
 
 /// The workflow that runs during pull requests.
 ///
@@ -235,6 +246,7 @@ local effectivePrbWorkflow = (prb) {
         }
       }
     }
+    ["check-pkl-github-actions"] = checkPklGHADefinitions.job
   }
 }
 
