@@ -47,8 +47,6 @@ examples {
             PKL_DOWNLOAD_URL: https://github.com/apple/pkl/releases/download/0.30.0/pkl-linux-amd64
           shell: bash
           run: |-
-            set -ex
-    
             DIR="$(mktemp -d /tmp/pkl-$PKL_VERSION-XXXXXX)"
             PKL_EXEC="$DIR/$PKL_FILENAME"
             curl -sfL -o $PKL_EXEC "$PKL_DOWNLOAD_URL"
