@@ -425,9 +425,7 @@ local withPublishTestResultsForMultipleJobs: Mixin<Workflow.Jobs> = (it) -> (it)
         `if` = "!cancelled()"
         with {
           file_patterns {
-            for (pattern in testReports.junit) {
-              "test-results-xml-*/\(pattern)"
-            }
+            "\(TEST_RESULT_XML_ARTIFACT_NAME)-*/**/*.xml"
           }
           comment_mode = "off"
         }
