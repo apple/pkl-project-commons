@@ -27,3 +27,19 @@ const withMavenPublishSecrets: Mixin<Workflow.Step> = new {
     ["ORG_GRADLE_PROJECT_sonatypeUsername"] = Context.secrets("ORG_GRADLE_PROJECT_SONATYPEUSERNAME")
   }
 }
+
+/// Use this for an `if` condition on jobs that "fan in" from multiple ancestors when one or more of
+/// those ancestors runs conditionally.
+///
+/// The four job states in GHA are:
+/// * success - completed successfully, checked by `success()`.
+/// * failure - ran unsuccessfully, checked by `failure()`.
+/// * cancelled - explicit user cancellation, checked by `cancelled()`.
+/// * skipped - skipped due to `if` condition, no check function.
+///
+/// Per [the docs](https://docs.github.com/en/actions/reference/workflows-and-actions/expressions#status-check-functions):
+/// > A default status check of success() is applied unless you include one of these functions.
+///
+/// This condition overrides the default behavior to proceed if all ancestor jobs have result
+/// `success` or `skipped`.
+const ifNoUpstreamFailures: String = "!failure() && !cancelled()"

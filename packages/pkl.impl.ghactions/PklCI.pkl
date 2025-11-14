@@ -20,6 +20,7 @@ import "@gha/Context.pkl"
 import "@gha/Workflow.pkl"
 
 import "actions/PublishUnitTestResult.pkl"
+import "helpers.pkl"
 import "util.pkl"
 
 /// The workflow that runs during pull requests.
@@ -396,6 +397,7 @@ local withPublishTestResultsForMultipleJobs: Mixin<Workflow.Jobs> = (it) -> (it)
   }
   ["publish-test-results"] {
     needs = it.keys.filter((key) -> testReports.includes(key)).toListing()
+    `if` = helpers.ifNoUpstreamFailures
     `runs-on` = "ubuntu-latest"
     permissions {
       checks = "write"
@@ -465,6 +467,8 @@ local function withTriggerWorkflows(triggerType: String): Mixin<Workflow.Jobs> =
       }
       `runs-on` = "ubuntu-latest"
       `if` = "github.repository_owner == 'apple'"
+      // NOTE: not using helpers.ifNoUpstreamFailures here because nothing should be skipped
+      // for release, releaseBranch, or main workflows
       steps {
         new {
           name = "Create app token"
