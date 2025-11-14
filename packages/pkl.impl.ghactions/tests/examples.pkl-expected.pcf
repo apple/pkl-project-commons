@@ -42,9 +42,9 @@ examples {
         - name: Setup Pkl
           id: setup-pkl
           env:
-            PKL_VERSION: latest
+            PKL_VERSION: 0.30.0
             PKL_FILENAME: pkl
-            PKL_DOWNLOAD_URL: https://github.com/apple/pkl/releases/download/latest/pkl-linux-amd64
+            PKL_DOWNLOAD_URL: https://github.com/apple/pkl/releases/download/0.30.0/pkl-linux-amd64
           shell: bash
           run: |-
             set -ex
