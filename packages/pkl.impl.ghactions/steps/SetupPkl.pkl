@@ -37,12 +37,13 @@ fixed step: Workflow.Step = new {
     ["PKL_FILENAME"] = "pkl\(fileExtension)"
     ["PKL_DOWNLOAD_URL"] = downloadUrl
   }
+  name = "Setup Pkl"
   // language=bash
   run =
     """
     set -ex
 
-    DIR="$(mktemp /tmp/pkl-$PKL_VERSION-XXXXXX)"
+    DIR="$(mktemp -d /tmp/pkl-$PKL_VERSION-XXXXXX)"
     PKL_EXEC="$DIR/$PKL_FILENAME"
     curl -sfL -o $PKL_EXEC "$PKL_DOWNLOAD_URL"
     chmod +x $PKL_EXEC

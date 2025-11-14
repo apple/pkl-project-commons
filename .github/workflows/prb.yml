@@ -43,7 +43,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v5
-    - id: setup-pkl
+    - name: Setup Pkl
+      id: setup-pkl
       env:
         PKL_VERSION: 0.30.0
         PKL_FILENAME: pkl
@@ -52,7 +53,7 @@ jobs:
       run: |-
         set -ex
 
-        DIR="$(mktemp /tmp/pkl-$PKL_VERSION-XXXXXX)"
+        DIR="$(mktemp -d /tmp/pkl-$PKL_VERSION-XXXXXX)"
         PKL_EXEC="$DIR/$PKL_FILENAME"
         curl -sfL -o $PKL_EXEC "$PKL_DOWNLOAD_URL"
         chmod +x $PKL_EXEC
