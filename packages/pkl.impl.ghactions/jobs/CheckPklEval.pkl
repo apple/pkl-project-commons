@@ -48,6 +48,7 @@ class EvalCommand {
         "--project-dir"
         projectDir
       }
+      ...modules
     }.join(" ")
 }
 

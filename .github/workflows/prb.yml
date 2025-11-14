@@ -60,7 +60,7 @@ jobs:
         echo "$DIR" >> "$GITHUB_PATH"
         echo "pkl_exec=$PKL_EXEC" >> "$GITHUB_OUTPUT"
     - shell: bash
-      run: pkl eval -m .github/ --project-dir .github/
+      run: pkl eval -m .github/ --project-dir .github/ .github/index.pkl
     - name: check git status
       shell: bash
       run: |-

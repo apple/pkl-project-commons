@@ -1,9 +1,0 @@
-amends "jobs/VerifyCleanPkl.pkl"
-
-command {
-  modules {
-    ".github/index.pkl"
-  }
-  projectDir = ".github/"
-  multipleFileOutputPath = ".github/"
-}
