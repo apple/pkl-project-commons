@@ -3,14 +3,14 @@
 # create a GitHub pull request.
 # It assumes that every repo exists in a forked account.
 #
-# Usage: ./update_downstream_ci.sh <your_github_account_name>
+# Usage: ./update_downstream_ci.sh
 
 set -eo pipefail
 
-MY_GIT_USER="$1"
+MY_GIT_USER="$(gh api user --jq '.login')"
 
 if [[ -z "$MY_GIT_USER" ]]; then
-  echo "Usage: update_downstream_ci.sh <your_github_account_name>"
+  echo "Could not determine the current user in gh. Try running \`gh auth login\`."
   exit 1
 fi
 
