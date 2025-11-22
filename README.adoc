@@ -14,3 +14,15 @@ For example:
 ----
 ./scripts/publish_package.sh pkl.impl.ghactions
 ----
+
+== Updating `pkl.impl.ghactions`
+
+There is a script in `./scripts/update_downstream_ci.sh` that auto-bumps the `pkl.impl.ghactions` package in every downstream repository.
+
+This script should be run whenever a new package is published.
+
+This tool assumes:
+
+1. You have `pkl`, `jq`, and `gh` installed.
+2. You are logged into `gh`.
+3. You have every downstream repo forked onto your personal GitHub account.
