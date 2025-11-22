@@ -311,7 +311,7 @@ local testReportWorkflow: Workflow = new {
           with {
             ["path"] = "artifacts"
             ["name"] = "test-results-.*"
-            ["name_is_regex"] = true
+            ["name_is_regexp"] = true
             ["run_id"] = "${{ github.event.workflow_run.id }}"
           }
         }
