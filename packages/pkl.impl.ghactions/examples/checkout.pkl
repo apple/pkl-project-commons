@@ -13,15 +13,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //===----------------------------------------------------------------------===//
-/// Abstractions for working with GitHub Actions for the Pkl team.
-amends "../basePklProject.pkl"
+amends "../PklCI.pkl"
 
-package {
-  version = "0.7.3"
-}
+import "@gha/actions/Common.pkl"
+import "@gha/Workflow.pkl"
 
-dependencies {
-  ["gha"] {
-    uri = "package://pkg.pkl-lang.org/github.com/stefma/pkl-gha/com.github.action@0.0.6"
+local doBuild: Workflow = new {
+  jobs {
+    ["do-build"] {
+      `runs-on` = "ubuntu-latest"
+      steps {
+        new Common.Checkout {}
+      }
+    }
   }
 }
+
+prb = doBuild
+
+main = doBuild
+
+build = doBuild
