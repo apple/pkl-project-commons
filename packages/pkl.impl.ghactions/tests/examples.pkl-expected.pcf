@@ -1,4 +1,121 @@
 examples {
+  ["checkout.pkl -- workflows/prb.yml"] {
+    """
+    # Do not modify!
+    # This file was generated from a template using https://github.com/StefMa/pkl-gha
+    
+    name: Pull Request
+    'on':
+      pull_request: {}
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
+    permissions:
+      contents: read
+    jobs:
+      do-build:
+        runs-on: ubuntu-latest
+        steps:
+        - uses: actions/checkout@v5
+          with:
+            persist-credentials: false
+      upload-event-file:
+        runs-on: ubuntu-latest
+        steps:
+        - name: Upload event file
+          if: '!cancelled()'
+          uses: actions/upload-artifact@v5
+          with:
+            name: test-results-event-file
+            path: ${{ github.event_path }}
+      check-pkl-github-actions:
+        runs-on: ubuntu-latest
+        steps:
+        - uses: actions/checkout@v5
+          with:
+            persist-credentials: false
+        - name: Setup Pkl
+          id: setup-pkl
+          env:
+            PKL_VERSION: 0.30.0
+            PKL_FILENAME: pkl
+            PKL_DOWNLOAD_URL: https://github.com/apple/pkl/releases/download/0.30.0/pkl-linux-amd64
+          shell: bash
+          run: |-
+            DIR="$(mktemp -d /tmp/pkl-$PKL_VERSION-XXXXXX)"
+            PKL_EXEC="$DIR/$PKL_FILENAME"
+            curl -sfL -o $PKL_EXEC "$PKL_DOWNLOAD_URL"
+            chmod +x $PKL_EXEC
+            echo "$DIR" >> "$GITHUB_PATH"
+            echo "pkl_exec=$PKL_EXEC" >> "$GITHUB_OUTPUT"
+        - shell: bash
+          run: pkl eval -m .github/ --project-dir .github/ .github/index.pkl
+        - name: check git status
+          shell: bash
+          run: |-
+            if [ -n "$(git status --porcelain)" ]; then
+              echo "Running pkl resulted in a diff! You likely need to run 'pkl eval' and commit the changes."
+              git diff --name-only
+              exit 1
+            fi
+    
+    """
+  }
+  ["checkout.pkl -- workflows/main.yml"] {
+    """
+    # Do not modify!
+    # This file was generated from a template using https://github.com/StefMa/pkl-gha
+    
+    name: Build (main)
+    'on':
+      push:
+        branches:
+        - main
+        tags-ignore:
+        - '**'
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: false
+    permissions:
+      contents: read
+    jobs:
+      do-build:
+        runs-on: ubuntu-latest
+        steps:
+        - uses: actions/checkout@v5
+          with:
+            persist-credentials: false
+    
+    """
+  }
+  ["checkout.pkl -- workflows/build.yml"] {
+    """
+    # Do not modify!
+    # This file was generated from a template using https://github.com/StefMa/pkl-gha
+    
+    name: Build
+    'on':
+      push:
+        branches-ignore:
+        - main
+        - release/*
+        tags-ignore:
+        - '**'
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: false
+    permissions:
+      contents: read
+    jobs:
+      do-build:
+        runs-on: ubuntu-latest
+        steps:
+        - uses: actions/checkout@v5
+          with:
+            persist-credentials: false
+    
+    """
+  }
   ["macosBuild.pkl -- workflows/prb.yml"] {
     """
     # Do not modify!
@@ -39,6 +156,8 @@ examples {
         runs-on: ubuntu-latest
         steps:
         - uses: actions/checkout@v5
+          with:
+            persist-credentials: false
         - name: Setup Pkl
           id: setup-pkl
           env:

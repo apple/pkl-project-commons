@@ -16,6 +16,7 @@
 module pkl.impl.ghactions.PklCI
 
 import "@gha/actions/Artifact.pkl"
+import "@gha/actions/Common.pkl"
 import "@gha/Context.pkl"
 import "@gha/Workflow.pkl"
 
@@ -552,6 +553,16 @@ output {
                 it.toMap().put("container", Map("image", nameParts[2])).put("name", nameParts[1])
             else
               it
+          // coerce `persist-credentials` to false, unless explicitly stated otherwise.
+          [Common.Checkout] = (it) ->
+            if (it.with?.`persist-credentials` != null)
+              it
+            else
+              (it) {
+                with {
+                  `persist-credentials` = false
+                }
+              }
         }
       }
     }
