@@ -101,7 +101,7 @@ function update_repo() {
   git add . &> /dev/null
   git commit -m "Bump pkl.impl.ghactions to version $LATEST_PACKAGE_VERSION" &> /dev/null
   echo "  Pushing to origin..."
-  git push -u origin bump-github-actions 2>&1 | grep -v "branch 'bump-github-actions' set up" || true
+  git push --force -u origin bump-github-actions 2>&1 | grep -v "branch 'bump-github-actions' set up" || true
   echo "  Creating pull request..."
   PR_URL=$(gh pr create --repo "apple/$1" --base main --head "$MY_GIT_USER:bump-github-actions" \
     --title "Bump pkl.impl.ghactions to version $LATEST_PACKAGE_VERSION" \
