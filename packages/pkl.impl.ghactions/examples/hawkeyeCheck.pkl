@@ -13,15 +13,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //===----------------------------------------------------------------------===//
-/// Abstractions for working with GitHub Actions for the Pkl team.
-amends "../basePklProject.pkl"
+amends "@com.github.actions/Workflow.pkl"
 
-package {
-  version = "1.0.0"
+import "../jobs/HawkeyeCheck.pkl"
+
+name = "hawkeye-check"
+
+on {
+  push {}
 }
 
-dependencies {
-  ["com.github.actions"] {
-    uri = "package://pkg.pkl-lang.org/pkl-pantry/com.github.actions@1.1.0"
-  }
+jobs {
+  ["hawkeye"] = new HawkeyeCheck {}.job
 }

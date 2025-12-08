@@ -19,5 +19,5 @@ import "../packages/pkl.impl.ghactions/PklProject" as pklImplGha
 
 dependencies {
   ["pkl.impl.ghactions"] = pklImplGha
-  ["gha"] = pklImplGha.dependencies["gha"]
+  ["com.github.actions"] = pklImplGha.dependencies["com.github.actions"]
 }

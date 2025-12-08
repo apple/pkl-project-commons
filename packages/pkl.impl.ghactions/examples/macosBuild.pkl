@@ -15,7 +15,7 @@
 //===----------------------------------------------------------------------===//
 amends "../PklCI.pkl"
 
-import "@gha/Workflow.pkl"
+import "@com.github.actions/Workflow.pkl"
 
 local buildAndTest: Workflow = new {
   jobs {

@@ -15,35 +15,35 @@
 //===----------------------------------------------------------------------===//
 module pkl.impl.ghactions.PublishUnitTestResult
 
-import "@gha/Workflow.pkl"
+extends "@com.github.actions/AbstractTypedStep.pkl"
 
-class Action extends Workflow.TypedStep {
-  fixed uses =
-    let (
-      osPart =
-        if (os == "linux")
-          ""
-        else if (os == "macOS")
-          "/macos"
-        else if (noPowershell)
-          "/windows/bash"
-        else
-          "/windows"
-    )
-      "EnricoMi/publish-unit-test-result-action\(osPart)@v2"
+fixed action =
+  let (
+    osPart =
+      if (os == "linux")
+        ""
+      else if (os == "macOS")
+        "/macos"
+      else if (noPowershell)
+        "/windows/bash"
+      else
+        "/windows"
+  )
+    "EnricoMi/publish-unit-test-result-action\(osPart)"
 
-  /// The OS that this action runs on.
-  hidden os: "linux" | "macOS" | "windows" = "linux"
+fixed version = "v2"
 
-  /// Running on Windows without PowerShell installed
-  hidden noPowershell: Boolean(implies(os == "windows")) = false
+/// The OS that this action runs on.
+hidden os: "linux" | "macOS" | "windows" = "linux"
 
-  with: Inputs?
-}
+/// Running on Windows without PowerShell installed
+hidden noPowershell: Boolean(implies(os == "windows")) = false
+
+with: With?
 
 /// Not complete; see <https://github.com/EnricoMi/publish-unit-test-result-action/blob/master/action.yml> for the
 /// complete set of inputs.
-class Inputs {
+class With {
   /// Github API Access Token.
   github_token: String?
 

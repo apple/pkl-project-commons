@@ -1,9 +1,7 @@
 examples {
   ["checkout.pkl -- workflows/prb.yml"] {
     """
-    # Do not modify!
-    # This file was generated from a template using https://github.com/StefMa/pkl-gha
-    
+    # Generated from Workflow.pkl. DO NOT EDIT.
     name: Pull Request
     'on':
       pull_request: {}
@@ -16,7 +14,7 @@ examples {
       do-build:
         runs-on: ubuntu-latest
         steps:
-        - uses: actions/checkout@v5
+        - uses: actions/checkout@v6
           with:
             persist-credentials: false
       upload-event-file:
@@ -24,14 +22,14 @@ examples {
         steps:
         - name: Upload event file
           if: '!cancelled()'
-          uses: actions/upload-artifact@v5
+          uses: actions/upload-artifact@v4
           with:
             name: test-results-event-file
             path: ${{ github.event_path }}
       check-pkl-github-actions:
         runs-on: ubuntu-latest
         steps:
-        - uses: actions/checkout@v5
+        - uses: actions/checkout@v6
           with:
             persist-credentials: false
         - name: Setup Pkl
@@ -63,9 +61,7 @@ examples {
   }
   ["checkout.pkl -- workflows/main.yml"] {
     """
-    # Do not modify!
-    # This file was generated from a template using https://github.com/StefMa/pkl-gha
-    
+    # Generated from Workflow.pkl. DO NOT EDIT.
     name: Build (main)
     'on':
       push:
@@ -82,7 +78,7 @@ examples {
       do-build:
         runs-on: ubuntu-latest
         steps:
-        - uses: actions/checkout@v5
+        - uses: actions/checkout@v6
           with:
             persist-credentials: false
     
@@ -90,9 +86,7 @@ examples {
   }
   ["checkout.pkl -- workflows/build.yml"] {
     """
-    # Do not modify!
-    # This file was generated from a template using https://github.com/StefMa/pkl-gha
-    
+    # Generated from Workflow.pkl. DO NOT EDIT.
     name: Build
     'on':
       push:
@@ -110,17 +104,35 @@ examples {
       do-build:
         runs-on: ubuntu-latest
         steps:
-        - uses: actions/checkout@v5
+        - uses: actions/checkout@v6
           with:
             persist-credentials: false
     
     """
   }
+  ["hawkeyeCheck.pkl"] {
+    """
+    # Generated from Workflow.pkl. DO NOT EDIT.
+    name: hawkeye-check
+    'on':
+      push: {}
+    jobs:
+      hawkeye:
+        name: hawkeye-check
+        runs-on: ubuntu-latest
+        steps:
+        - uses: actions/checkout@v6
+          with:
+            fetch-depth: 0
+        - run: hawkeye check --config licenserc.toml --fail-if-unknown
+        container:
+          image: ghcr.io/korandoru/hawkeye@sha256:c3ab994c0d81f3d116aabf9afc534e18648e3e90d7525d741c1e99dd8166ec85
+    
+    """
+  }
   ["macosBuild.pkl -- workflows/prb.yml"] {
     """
-    # Do not modify!
-    # This file was generated from a template using https://github.com/StefMa/pkl-gha
-    
+    # Generated from Workflow.pkl. DO NOT EDIT.
     name: Pull Request
     'on':
       pull_request: {}
@@ -138,7 +150,7 @@ examples {
         - run: echo hello
         - name: Upload Test Result XML
           if: '!cancelled()'
-          uses: actions/upload-artifact@v5
+          uses: actions/upload-artifact@v4
           with:
             name: test-results-xml-do-build
             path: '**.xml'
@@ -148,14 +160,14 @@ examples {
         steps:
         - name: Upload event file
           if: '!cancelled()'
-          uses: actions/upload-artifact@v5
+          uses: actions/upload-artifact@v4
           with:
             name: test-results-event-file
             path: ${{ github.event_path }}
       check-pkl-github-actions:
         runs-on: ubuntu-latest
         steps:
-        - uses: actions/checkout@v5
+        - uses: actions/checkout@v6
           with:
             persist-credentials: false
         - name: Setup Pkl
@@ -187,9 +199,7 @@ examples {
   }
   ["macosBuild.pkl -- workflows/main.yml"] {
     """
-    # Do not modify!
-    # This file was generated from a template using https://github.com/StefMa/pkl-gha
-    
+    # Generated from Workflow.pkl. DO NOT EDIT.
     name: Build (main)
     'on':
       push:
@@ -222,9 +232,7 @@ examples {
   }
   ["macosBuild.pkl -- workflows/build.yml"] {
     """
-    # Do not modify!
-    # This file was generated from a template using https://github.com/StefMa/pkl-gha
-    
+    # Generated from Workflow.pkl. DO NOT EDIT.
     name: Build
     'on':
       push:
@@ -258,9 +266,7 @@ examples {
   }
   ["macosBuild.pkl -- workflows/test_report.yml"] {
     """
-    # Do not modify!
-    # This file was generated from a template using https://github.com/StefMa/pkl-gha
-    
+    # Generated from Workflow.pkl. DO NOT EDIT.
     name: PR Test Reports
     'on':
       workflow_run:

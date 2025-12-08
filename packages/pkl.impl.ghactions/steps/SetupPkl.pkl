@@ -15,7 +15,7 @@
 //===----------------------------------------------------------------------===//
 module pkl.impl.ghactions.steps.SetupPkl
 
-import "@gha/Workflow.pkl"
+import "@com.github.actions/Workflow.pkl"
 
 version: String
 

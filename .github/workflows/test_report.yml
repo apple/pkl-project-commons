@@ -1,6 +1,4 @@
-# Do not modify!
-# This file was generated from a template using https://github.com/StefMa/pkl-gha
-
+# Generated from Workflow.pkl. DO NOT EDIT.
 name: PR Test Reports
 'on':
   workflow_run:

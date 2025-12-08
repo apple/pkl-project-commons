@@ -13,25 +13,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //===----------------------------------------------------------------------===//
-import "@gha/Workflow.pkl"
+import "@com.github.actions/Workflow.pkl"
 
 typealias OS = "windows" | "macOS" | "linux"
 
-local function determineOSRunsOn(input: String | Workflow.Machine): OS? =
-  let (effectiveStr = if (input is String) input else input.name)
-    if (effectiveStr.contains("windows"))
-      "windows"
-    else if (effectiveStr.contains("macos"))
-      "macOS"
-    else if (effectiveStr.contains("ubuntu"))
-      "linux"
-    else
-      null
+local function determineOSRunsOn(input: String): OS? =
+  if (input.contains("windows"))
+    "windows"
+  else if (input.contains("macos"))
+    "macOS"
+  else if (input.contains("ubuntu"))
+    "linux"
+  else
+    null
 
 /// Tries to determine the OS for a workflow job.
 function determineOS(job: Workflow.Job): OS? =
   let (runsOn = job.`runs-on`)
-    if (runsOn is String | Workflow.Machine)
+    if (runsOn is String)
       determineOSRunsOn(runsOn)
     else
       runsOn.fold(null, (os, runsOn) -> os ?? determineOSRunsOn(runsOn))

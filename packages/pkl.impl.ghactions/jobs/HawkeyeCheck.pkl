@@ -17,7 +17,7 @@ module pkl.impl.ghactions.jobs.HawkeyeCheck
 
 extends "PklJob.pkl"
 
-import "@gha/actions/Common.pkl"
+import "@com.github.actions/catalog.pkl"
 
 image: String =
   "ghcr.io/korandoru/hawkeye@sha256:c3ab994c0d81f3d116aabf9afc534e18648e3e90d7525d741c1e99dd8166ec85"
@@ -29,15 +29,13 @@ failIfUnknown: Boolean = true
 failIfMissing: Boolean = false
 
 fixed job {
-  // TODO when upstream pkl-gha supports it
-  // This is currently injected in ../PklCI.pkl via an output converter
-  // container {
-  //   image = self.image
-  // }
   `runs-on` = "ubuntu-latest"
-  name = "container:hawkeye-check:\(image)"
+  container {
+    image = module.image
+  }
+  name = "hawkeye-check"
   steps {
-    new Common.Checkout {
+    (catalog.`actions/checkout@v6`) {
       with {
         // required to result git attrs
         `fetch-depth` = 0

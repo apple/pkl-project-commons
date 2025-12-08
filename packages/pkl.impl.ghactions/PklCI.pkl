@@ -15,10 +15,10 @@
 //===----------------------------------------------------------------------===//
 module pkl.impl.ghactions.PklCI
 
-import "@gha/actions/Artifact.pkl"
-import "@gha/actions/Common.pkl"
-import "@gha/Context.pkl"
-import "@gha/Workflow.pkl"
+import "@com.github.actions/actions/checkout/v6/Checkout.pkl"
+import "@com.github.actions/catalog.pkl"
+import "@com.github.actions/context.pkl"
+import "@com.github.actions/Workflow.pkl"
 
 import "actions/PublishUnitTestResult.pkl"
 import "helpers.pkl"
@@ -146,7 +146,7 @@ local effectiveBuildWorkflow = (build) {
   }
   concurrency = new {
     // only run once at a time per branch
-    group = "\(Context.github.workflow)-\(Context.github.ref)"
+    group = "\(context.github.workflow)-\(context.github.ref)"
     `cancel-in-progress` = false // TODO remove once correctly marked nullable in upstream pkl-gha
   }
   on {
@@ -170,7 +170,7 @@ local effectiveReleaseBranchWorkflow = (build) {
   }
   concurrency = new {
     // only run once at a time per release branch
-    group = "\(Context.github.workflow)-\(Context.github.ref)"
+    group = "\(context.github.workflow)-\(context.github.ref)"
     `cancel-in-progress` = true
   }
   on {
@@ -197,7 +197,7 @@ local effectiveMainWorkflow = (main) {
   }
   concurrency = new {
     // only run once at a time
-    group = "\(Context.github.workflow)-\(Context.github.ref)"
+    group = "\(context.github.workflow)-\(context.github.ref)"
     `cancel-in-progress` = false // TODO remove once correctly marked nullable in upstream pkl-gha
   }
   on {
@@ -227,7 +227,7 @@ local effectivePrbWorkflow = (prb) {
   }
   concurrency = new {
     // cancel running workflows for the same PR
-    group = "\(Context.github.workflow)-\(Context.github.ref)"
+    group = "\(context.github.workflow)-\(context.github.ref)"
     `cancel-in-progress` = true
   }
   on {
@@ -237,12 +237,12 @@ local effectivePrbWorkflow = (prb) {
     ["upload-event-file"] {
       `runs-on` = "ubuntu-latest"
       steps {
-        new Artifact.Upload {
+        (catalog.`actions/upload-artifact@v4`) {
           name = "Upload event file"
           `if` = "!cancelled()"
           with {
             name = TEST_RESULT_EVENT_FILE_ARTIFACT_NAME
-            path = Context.github.eventPath
+            path = context.github.eventPath
           }
         }
       }
@@ -258,7 +258,7 @@ local effectiveReleaseWorkflow = (release) {
   }
   concurrency = new {
     // only run once at a time per tag
-    group = "\(Context.github.workflow)-\(Context.github.ref)"
+    group = "\(context.github.workflow)-\(context.github.ref)"
     `cancel-in-progress` = false // TODO remove once correctly marked nullable in upstream pkl-gha
   }
   on {
@@ -316,7 +316,7 @@ local testReportWorkflow: Workflow = new {
             ["run_id"] = "${{ github.event.workflow_run.id }}"
           }
         }
-        new PublishUnitTestResult.Action {
+        new PublishUnitTestResult {
           name = "Publish test results"
           with {
             commit = "${{ github.event.workflow_run.head_sha }}"
@@ -343,7 +343,7 @@ local withUploadTestResultXml: Mixin<Workflow.Jobs> = (it) -> (it) {
       when (testReports.includes(key)) {
         [key] {
           steps {
-            new Artifact.Upload {
+            (catalog.`actions/upload-artifact@v4`) {
               name = "Upload Test Result XML"
               `if` = "!cancelled()"
               with {
@@ -365,7 +365,7 @@ local withUploadTestResultHtml: Mixin<Workflow.Jobs> = (it) -> (it) {
       when (testReports.includes(key)) {
         [key] {
           steps {
-            new Artifact.Upload {
+            (catalog.`actions/upload-artifact@v4`) {
               name = "Upload Test Result HTML"
               `if` = "!cancelled()"
               with {
@@ -388,7 +388,7 @@ local withPublishTestResultsForMultipleJobs: Mixin<Workflow.Jobs> = (it) -> (it)
         local self = this
         steps {
           // matrix build; upload test results as an artifact
-          new Artifact.Upload {
+          (catalog.`actions/upload-artifact@v4`) {
             name = "Upload Test Result XML"
             `if` = "!cancelled()"
             with {
@@ -416,12 +416,12 @@ local withPublishTestResultsForMultipleJobs: Mixin<Workflow.Jobs> = (it) -> (it)
       checks = "write"
     }
     steps {
-      new Artifact.Download {
+      (catalog.`actions/download-artifact@v5`) {
         with {
           pattern = "\(TEST_RESULT_XML_ARTIFACT_NAME)-*"
         }
       }
-      new PublishUnitTestResult.Action {
+      new PublishUnitTestResult {
         name = "Publish test results"
         `if` = "!cancelled()"
         with {
@@ -451,7 +451,7 @@ local withPublishTestResults: Mixin<Workflow.Jobs> = (it) ->
                 checks = "write"
               }
               steps {
-                new PublishUnitTestResult.Action {
+                new PublishUnitTestResult {
                   name = "Publish test results"
                   // if we can't figure out the correct OS, just try to use the linux version.
                   os = util.determineOS(job) ?? "linux"
@@ -486,9 +486,9 @@ local function withTriggerWorkflows(triggerType: String): Mixin<Workflow.Jobs> =
           id = "app-token"
           uses = "actions/create-github-app-token@v2"
           with {
-            ["app-id"] = Context.secrets("PKL_CI_CLIENT_ID")
-            ["private-key"] = Context.secrets("PKL_CI")
-            ["owner"] = Context.github.repositoryOwner
+            ["app-id"] = context.secrets("PKL_CI_CLIENT_ID")
+            ["private-key"] = context.secrets("PKL_CI")
+            ["owner"] = context.github.repositoryOwner
           }
         }
         when (triggerType == triggerDocsBuild || triggerDocsBuild == "both") {
@@ -502,7 +502,7 @@ local function withTriggerWorkflows(triggerType: String): Mixin<Workflow.Jobs> =
               gh workflow run \
                 --repo apple/pkl-lang.org \
                 --ref main \
-                --field source_run="\#(Context.github.serverUrl)/\#(Context.github.repository)/actions/runs/\#(Context.github.runId)" \
+                --field source_run="\#(context.github.serverUrl)/\#(context.github.repository)/actions/runs/\#(context.github.runId)" \
                 main.yml
               """#
           }
@@ -518,7 +518,7 @@ local function withTriggerWorkflows(triggerType: String): Mixin<Workflow.Jobs> =
               gh workflow run \
                 --repo apple/pkl-package-docs \
                 --ref main \
-                --field source_run="\#(Context.github.serverUrl)/\#(Context.github.repository)/actions/runs/\#(Context.github.runId)" \
+                --field source_run="\#(context.github.serverUrl)/\#(context.github.repository)/actions/runs/\#(context.github.runId)" \
                 main.yml
               """#
           }
@@ -543,18 +543,11 @@ output {
       ["workflows/test_report.yml"] = testReportWorkflow.output
     }
   } {
-    // TODO remove when pkl-gha supports Job.container
     [[true]] {
       renderer {
         converters {
-          [Workflow.DefaultJob] = (it) ->
-            if (it.name?.startsWith("container:") ?? false)
-              let (nameParts = it.name.splitLimit(":", 3))
-                it.toMap().put("container", Map("image", nameParts[2])).put("name", nameParts[1])
-            else
-              it
           // coerce `persist-credentials` to false, unless explicitly stated otherwise.
-          [Common.Checkout] = (it) ->
+          [Checkout.getClass()] = (it) ->
             if (it.with?.`persist-credentials` != null)
               it
             else
