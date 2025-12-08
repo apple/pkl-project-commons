@@ -237,7 +237,7 @@ local effectivePrbWorkflow = (prb) {
     ["upload-event-file"] {
       `runs-on` = "ubuntu-latest"
       steps {
-        (catalog.`actions/upload-artifact@v4`) {
+        (catalog.`actions/upload-artifact@v5`) {
           name = "Upload event file"
           `if` = "!cancelled()"
           with {
@@ -343,7 +343,7 @@ local withUploadTestResultXml: Mixin<Workflow.Jobs> = (it) -> (it) {
       when (testReports.includes(key)) {
         [key] {
           steps {
-            (catalog.`actions/upload-artifact@v4`) {
+            (catalog.`actions/upload-artifact@v5`) {
               name = "Upload Test Result XML"
               `if` = "!cancelled()"
               with {
@@ -365,7 +365,7 @@ local withUploadTestResultHtml: Mixin<Workflow.Jobs> = (it) -> (it) {
       when (testReports.includes(key)) {
         [key] {
           steps {
-            (catalog.`actions/upload-artifact@v4`) {
+            (catalog.`actions/upload-artifact@v5`) {
               name = "Upload Test Result HTML"
               `if` = "!cancelled()"
               with {
@@ -388,7 +388,7 @@ local withPublishTestResultsForMultipleJobs: Mixin<Workflow.Jobs> = (it) -> (it)
         local self = this
         steps {
           // matrix build; upload test results as an artifact
-          (catalog.`actions/upload-artifact@v4`) {
+          (catalog.`actions/upload-artifact@v5`) {
             name = "Upload Test Result XML"
             `if` = "!cancelled()"
             with {

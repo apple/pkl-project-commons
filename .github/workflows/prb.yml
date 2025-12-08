@@ -24,7 +24,7 @@ jobs:
       run: ./gradlew build
     - name: Upload Test Result XML
       if: '!cancelled()'
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       with:
         name: test-results-xml-build-and-test
         path: build/test-results/**/*.xml
@@ -34,7 +34,7 @@ jobs:
     steps:
     - name: Upload event file
       if: '!cancelled()'
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       with:
         name: test-results-event-file
         path: ${{ github.event_path }}
