@@ -42,4 +42,5 @@ const withMavenPublishSecrets: Mixin<Workflow.Step> = new {
 ///
 /// This condition overrides the default behavior to proceed if all ancestor jobs have result
 /// `success` or `skipped`.
-const ifNoUpstreamFailures: String = "!failure() && !cancelled()"
+// language=GithubExpressionLanguage
+const ifNoUpstreamFailures: String = "!cancelled()"
