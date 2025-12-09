@@ -1,0 +1,136 @@
+//===----------------------------------------------------------------------===//
+// Copyright © 2025 Apple Inc. and the Pkl project authors. All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//===----------------------------------------------------------------------===//
+/// A template for writing multiple workflows, whose actions are pinned to specific SHAs.
+///
+/// Typically, this module is placed in `.github/index.pkl`.
+/// To produce output, the `-m` (or `--multiple-file-output-path`) flag must pointed at the repo's
+/// `.github` directory.
+///
+/// ## Initialization
+///
+/// When first using this module, or whenever a new action is added, the lockfile and dependabot.yml
+/// must be generated.
+/// To generate these two files, pass `--prop mode=lockfile` during evaluation.
+// TODO move me to pkl-pantry
+open module pkl.impl.ghactions.VersionLockedCI
+
+import "pkl:yaml"
+
+import "@com.github.actions/AbstractTypedStep.pkl"
+import "@com.github.actions/Step.pkl"
+import "@com.github.actions/Workflow.pkl"
+import "@deepToTyped/deepToTyped.pkl"
+
+import "DependabotV2.pkl"
+import "LockfileGenerator.pkl"
+
+/// The effective workflows produced by this job, keyed by the workflow filename.
+///
+/// Example:
+///
+/// ```
+/// workflows {
+///   ["workflow/prb.yml"] = myPrbWorkflow
+/// }
+/// ```
+workflows: Mapping<String, Workflow>
+
+/// Dependabot configuration.
+///
+/// The github-actions ecosystem will be automatically added to this.
+dependabot: DependabotV2
+
+local lockfileName = "workflows/__lockfile__.yml"
+
+local yamlParser: yaml.Parser = new { useMapping = true }
+
+/// A map of action name to its checksum.
+///
+/// Parsed from `__lockfile__.yml`.
+///
+/// e.g. `Map("actions/checkout@v5", "actions/checkout@abc123")`
+local locks: Map<String, String> =
+  let (
+    lockfileResource: Resource =
+      let (pwd = read("env:PWD"))
+      let (
+        // allow running from either `.github` dir or repo root
+        resource =
+          read?("file://\(pwd)/\(lockfileName)")
+            ?? read?("file://\(pwd)/.github/\(lockfileName)")
+      )
+        if (resource == null)
+          throw("Missing lockfile! Run with `-p mode=lockfile` to generate it.")
+        else
+          resource
+  )
+  let (mapping = yamlParser.parse(lockfileResource) as Mapping)
+  let (workflow = deepToTyped.apply(Workflow.getClass(), mapping) as Workflow)
+  let (locksJob = workflow.jobs.toMap().values.first)
+    locksJob.steps.toList().toMap((step) -> step.name!!, (step) -> step.uses!!)
+
+local outputMode = read?("prop:mode")
+local generator: LockfileGenerator = new {
+  workflows = module.workflows.toMap().values
+}
+
+local effectiveDependabot: DependabotV2 = (dependabot) {
+  updates {
+    new {
+      `package-ecosystem` = "github-actions"
+      directory = "/"
+      schedule {
+        interval = "weekly"
+      }
+      `exclude-paths` {
+        for (name, _ in workflows) {
+          ".github/\(name)"
+        }
+      }
+    }
+  }
+}
+
+output {
+  text = "This module only supports multiple-file output. Evaluate me with the `-m` flag."
+  files {
+    when (outputMode == "lockfile") {
+      [lockfileName] = generator.result.output
+      ["dependabot.yml"] = effectiveDependabot.output
+    } else {
+      for (name, workflow in workflows) {
+        [name] = (workflow.output) {
+          renderer {
+            converters {
+              [Step.getClass()] = (it) ->
+                let (mapped = locks.getOrNull(it.uses))
+                  if (mapped == null)
+                    it
+                  else
+                    (it) { uses = mapped }
+              [AbstractTypedStep.getClass()] = (it) ->
+                let (mapped = locks.getOrNull(it.uses))
+                  if (mapped == null)
+                    it
+                  else
+                    (it) { sha = mapped.split("@").last }
+            }
+          }
+        }
+      }
+    }
+  }
+}

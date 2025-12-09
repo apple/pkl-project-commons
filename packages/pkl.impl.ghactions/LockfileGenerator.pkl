@@ -1,0 +1,122 @@
+//===----------------------------------------------------------------------===//
+// Copyright © 2025 Apple Inc. and the Pkl project authors. All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//===----------------------------------------------------------------------===//
+module com.github.actions.contrib.LockfileGenerator
+
+import "@com.github.actions/Workflow.pkl"
+
+workflows: List<Workflow>
+
+local allReusableSteps: Listing<ActionMeta> = new {
+  for (workflow in workflows) {
+    for (job in workflow.jobs) {
+      for (step in job.steps) {
+        when (step.uses != null && !step.uses.startsWith("./")) {
+          new ActionMeta {
+            uses = step.uses!!
+          }
+        }
+      }
+    }
+  }
+}
+
+local allActions =
+  allReusableSteps
+    .toList()
+    .filter((it) -> !it.versionIsChecksum)
+    .distinctBy((it) -> it.id)
+
+local class ActionMeta {
+  uses: String
+
+  local parts = uses.split("@")
+
+  local orgRepoSubpath = parts[0].split("/")
+
+  local version = parts[1]
+
+  fixed versionIsChecksum = version.matches(Regex("[a-fA-F0-9]{7,40}"))
+
+  fixed org: String = orgRepoSubpath[0]
+
+  fixed repo: String = orgRepoSubpath[1]
+
+  fixed subpath: String = orgRepoSubpath.drop(2).join("/")
+
+  fixed tag: String? = if (versionIsChecksum) null else version
+
+  fixed id = "\(org)\(repo)\(tag)"
+
+  fixed usesWithTag =
+    if (subpath.isEmpty)
+      "\(org)/\(repo)@\(tag)"
+    else
+      "\(org)/\(repo)/\(subpath)@\(tag)"
+
+  fixed usesWithChecksum =
+    if (subpath.isEmpty)
+      "\(org)/\(repo)@\(sha)"
+    else
+      "\(org)/\(repo)/\(subpath)@\(sha)"
+
+  // noinspection TypeMismatch
+  fixed sha: String =
+    if (versionIsChecksum)
+      version
+    else
+      let (
+        gitOutput = read("https://github.com/\(org)/\(repo).git/info/refs?service=git-upload-pack")
+      )
+        gitOutput.text
+          .split("\n")
+          .find((it) -> it.endsWith("refs/tags/\(version)"))
+          .split(" ")
+          .first
+          .drop(4)
+}
+
+fixed result: Workflow = new {
+  name = "__lockfile__"
+  on {
+    schedule {
+      // never run (crontab means: run on February 31st)
+      // language=cronexp
+      new { cron = "* * 31 2 *" }
+    }
+  }
+  jobs {
+    ["locks"] {
+      `runs-on` = "nothing"
+    }
+  }
+  output {
+    renderer {
+      converters {
+        ["jobs[locks].steps"] = (_) -> new Listing {
+          local yamlRenderer = new YamlRenderer {}
+          for (step in allActions) {
+            new {
+              name = step.usesWithTag
+              uses = new RenderDirective {
+                text = " " + yamlRenderer.renderValue(step.usesWithChecksum) + " # \(step.tag)"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

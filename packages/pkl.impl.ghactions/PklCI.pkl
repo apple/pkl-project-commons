@@ -15,6 +15,8 @@
 //===----------------------------------------------------------------------===//
 module pkl.impl.ghactions.PklCI
 
+extends "VersionLockedCI.pkl"
+
 import "@com.github.actions/actions/checkout/v6/Checkout.pkl"
 import "@com.github.actions/catalog.pkl"
 import "@com.github.actions/context.pkl"
@@ -119,6 +121,19 @@ triggerDocsBuild: "none" | "release" | "both" = "none"
 ///
 /// Does not do anything if the repo's owner is not `apple`.
 triggerPackageDocsBuild: "none" | "main" | "release" = "none"
+//
+// local yamlParser = new yaml.Parser { useMapping = true }
+//
+// local lockfileWorkflow: Workflow? =
+//   let (pwd = read("env:PWD"))
+//   let (yamlContents = read?("file://\(pwd)/.github/workflows/__lockfile__.yml"))
+//     let (parsed =
+//     if (yamlContents == null)
+//       null
+//     else
+//       yamlParser.parse(yamlContents) as Mapping
+//     )
+//       deepToTyped.apply(Workflow.getClass(), parsed) as Workflow
 
 class TestReports {
   /// Paths, directories, and globs to junit test reports, to be processed by a GitHub Actions test reporter.
@@ -528,21 +543,23 @@ local function withTriggerWorkflows(triggerType: String): Mixin<Workflow.Jobs> =
   }
 }
 
+workflows {
+  ["workflows/prb.yml"] = effectivePrbWorkflow
+  ["workflows/main.yml"] = effectiveMainWorkflow
+  ["workflows/build.yml"] = effectiveBuildWorkflow
+  when (release != null) {
+    ["workflows/release.yml"] = effectiveReleaseWorkflow
+  }
+  when (releaseBranch != null) {
+    ["workflows/release-branch.yml"] = effectiveReleaseBranchWorkflow
+  }
+  when (!testReports.junit.isEmpty) {
+    ["workflows/test_report.yml"] = testReportWorkflow
+  }
+}
+
 output {
   files {
-    ["workflows/prb.yml"] = effectivePrbWorkflow.output
-    ["workflows/main.yml"] = effectiveMainWorkflow.output
-    ["workflows/build.yml"] = effectiveBuildWorkflow.output
-    when (release != null) {
-      ["workflows/release.yml"] = effectiveReleaseWorkflow.output
-    }
-    when (releaseBranch != null) {
-      ["workflows/release-branch.yml"] = effectiveReleaseBranchWorkflow.output
-    }
-    when (!testReports.junit.isEmpty) {
-      ["workflows/test_report.yml"] = testReportWorkflow.output
-    }
-  } {
     [[true]] {
       renderer {
         converters {
