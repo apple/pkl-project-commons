@@ -15,22 +15,21 @@
 //===----------------------------------------------------------------------===//
 amends "@pkl.impl.ghactions/PklCI.pkl"
 
-import "@gha/actions/Common.pkl"
-import "@gha/actions/Setup.pkl"
-import "@gha/Workflow.pkl"
+import "@com.github.actions/catalog.pkl"
+import "@com.github.actions/Workflow.pkl"
 
 local buildAndTest: Workflow = new {
   jobs {
     ["build-and-test"] {
       `runs-on` = "ubuntu-latest"
       steps {
-        new Common.Checkout {
+        (catalog.`actions/checkout@v6`) {
           with {
             // needed for Spotless
             `fetch-depth` = 0
           }
         }
-        new Setup.Java {
+        (catalog.`actions/setup-java@v5`) {
           with {
             `java-version` = "21"
             distribution = "temurin"

@@ -15,16 +15,16 @@
 //===----------------------------------------------------------------------===//
 module pkl.impl.ghactions.helpers
 
-import "@gha/Context.pkl"
-import "@gha/Workflow.pkl"
+import "@com.github.actions/context.pkl"
+import "@com.github.actions/Workflow.pkl"
 
 const withMavenPublishSecrets: Mixin<Workflow.Step> = new {
   env {
-    ["ORG_GRADLE_PROJECT_signingKeyId"] = Context.secrets("ORG_GRADLE_PROJECT_SIGNINGKEYID")
-    ["ORG_GRADLE_PROJECT_signingKey"] = Context.secrets("ORG_GRADLE_PROJECT_SIGNINGKEY")
-    ["ORG_GRADLE_PROJECT_signingPassword"] = Context.secrets("ORG_GRADLE_PROJECT_SIGNINGPASSWORD")
-    ["ORG_GRADLE_PROJECT_sonatypePassword"] = Context.secrets("ORG_GRADLE_PROJECT_SONATYPEPASSWORD")
-    ["ORG_GRADLE_PROJECT_sonatypeUsername"] = Context.secrets("ORG_GRADLE_PROJECT_SONATYPEUSERNAME")
+    ["ORG_GRADLE_PROJECT_signingKeyId"] = context.secrets("ORG_GRADLE_PROJECT_SIGNINGKEYID")
+    ["ORG_GRADLE_PROJECT_signingKey"] = context.secrets("ORG_GRADLE_PROJECT_SIGNINGKEY")
+    ["ORG_GRADLE_PROJECT_signingPassword"] = context.secrets("ORG_GRADLE_PROJECT_SIGNINGPASSWORD")
+    ["ORG_GRADLE_PROJECT_sonatypePassword"] = context.secrets("ORG_GRADLE_PROJECT_SONATYPEPASSWORD")
+    ["ORG_GRADLE_PROJECT_sonatypeUsername"] = context.secrets("ORG_GRADLE_PROJECT_SONATYPEUSERNAME")
   }
 }
 

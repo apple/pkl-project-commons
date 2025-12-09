@@ -15,7 +15,7 @@
 //===----------------------------------------------------------------------===//
 amends "pkl:test"
 
-import "@gha/Workflow.pkl"
+import "@com.github.actions/Workflow.pkl"
 
 import "../util.pkl"
 
@@ -26,7 +26,6 @@ facts {
     util.determineOS(new Workflow.Job { `runs-on` = "windows-latest" }) == "windows"
     util.determineOS(new Workflow.Job { `runs-on` = new Listing { "windows-latest"; "x86" } })
       == "windows"
-    util.determineOS(new Workflow.Job { `runs-on` = new Workflow.MacOsLatest {} }) == "macOS"
     util.determineOS(new Workflow.Job { `runs-on` = new Listing { "self-hosted"; "macos" } })
       == "macOS"
   }

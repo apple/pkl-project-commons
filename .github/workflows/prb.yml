@@ -1,6 +1,4 @@
-# Do not modify!
-# This file was generated from a template using https://github.com/StefMa/pkl-gha
-
+# Generated from Workflow.pkl. DO NOT EDIT.
 name: Pull Request
 'on':
   pull_request: {}
@@ -13,7 +11,7 @@ jobs:
   build-and-test:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
       with:
         persist-credentials: false
         fetch-depth: 0
@@ -43,7 +41,7 @@ jobs:
   check-pkl-github-actions:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
       with:
         persist-credentials: false
     - name: Setup Pkl

@@ -15,7 +15,7 @@
 //===----------------------------------------------------------------------===//
 abstract module pkl.impl.ghactions.jobs.PklJob
 
-import "@gha/Workflow.pkl"
+import "@com.github.actions/Workflow.pkl"
 
 /// The underlying job output.
 fixed job: Workflow.Job

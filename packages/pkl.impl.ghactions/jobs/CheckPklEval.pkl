@@ -16,8 +16,8 @@
 /// Checks that the Pkl definitions eval correctly, and that they produce no diffs in git.
 module pkl.impl.ghactions.jobs.VerifyPklEval
 
-import "@gha/actions/Common.pkl"
-import "@gha/Workflow.pkl"
+import "@com.github.actions/catalog.pkl"
+import "@com.github.actions/Workflow.pkl"
 
 import "../steps/SetupPkl.pkl"
 
@@ -55,7 +55,7 @@ class EvalCommand {
 fixed job: Workflow.Job = new {
   `runs-on` = "ubuntu-latest"
   steps {
-    new Common.Checkout {}
+    catalog.`actions/checkout@v6`
     new SetupPkl { version = "0.30.0" }.step
     new {
       shell = "bash"

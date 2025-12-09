@@ -15,11 +15,23 @@
 //===----------------------------------------------------------------------===//
 amends "pkl:test"
 
+import "@com.github.actions/Workflow.pkl"
+
+import "../PklCI.pkl"
+
 examples {
   for (exampleName, example in import*("../examples/*.pkl")) {
-    for (fileName, contents in example.output.files!!) {
-      ["\(exampleName.replaceFirst("../examples/", "")) -- \(fileName)"] {
-        contents.text
+    when (example is PklCI) {
+      for (fileName, contents in example.output.files!!) {
+        ["\(exampleName.replaceFirst("../examples/", "")) -- \(fileName)"] {
+          contents.text
+        }
+      }
+    } else {
+      when (example is Workflow) {
+        ["\(exampleName.replaceFirst("../examples/", ""))"] {
+          example.output.text
+        }
       }
     }
   }

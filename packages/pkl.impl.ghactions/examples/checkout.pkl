@@ -15,15 +15,15 @@
 //===----------------------------------------------------------------------===//
 amends "../PklCI.pkl"
 
-import "@gha/actions/Common.pkl"
-import "@gha/Workflow.pkl"
+import "@com.github.actions/catalog.pkl"
+import "@com.github.actions/Workflow.pkl"
 
 local doBuild: Workflow = new {
   jobs {
     ["do-build"] {
       `runs-on` = "ubuntu-latest"
       steps {
-        new Common.Checkout {}
+        catalog.`actions/checkout@v6`
       }
     }
   }
