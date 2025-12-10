@@ -94,6 +94,10 @@ local class ActionMeta {
     sha = self.sha
   }
 
+  /// Don't use api.github.com because of rate limiting
+  ///
+  /// The response from this API call is in
+  /// [pkt-line format](https://git-scm.com/docs/protocol-common#_pkt_line_format).
   local function getSha(org: String, repo: String, tag: String): String =
     let (
       gitOutput = read("https://github.com/\(org)/\(repo).git/info/refs?service=git-upload-pack")
