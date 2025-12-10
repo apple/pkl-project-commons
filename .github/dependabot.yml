@@ -1,0 +1,11 @@
+version: 2
+updates:
+- directory: /
+  exclude-paths:
+  - .github/workflows/prb.yml
+  - .github/workflows/main.yml
+  - .github/workflows/build.yml
+  - .github/workflows/test_report.yml
+  package-ecosystem: github-actions
+  schedule:
+    interval: weekly

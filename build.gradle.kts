@@ -99,6 +99,7 @@ pkl {
         projectDirectories.from(projectDirs)
         outputPath.set(outputDir.dir("generated/packages/%{name}/%{version}"))
         junitReportsDir.set(outputDir.dir("test-results"))
+        externalProperties.put("mode", "test")
         color = true
       }
     }

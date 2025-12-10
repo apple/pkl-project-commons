@@ -28,3 +28,9 @@ dependencies {
     uri = "package://pkg.pkl-lang.org/pkl-pantry/pkl.experimental.deepToTyped@1.1.1"
   }
 }
+
+evaluatorSettings {
+  externalProperties {
+    ["mode"] = "test"
+  }
+}

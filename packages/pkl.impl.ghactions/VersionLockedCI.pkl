@@ -29,8 +29,8 @@ open module pkl.impl.ghactions.VersionLockedCI
 
 import "pkl:yaml"
 
+import "@com.github.actions/AbstractStep.pkl"
 import "@com.github.actions/AbstractTypedStep.pkl"
-import "@com.github.actions/Step.pkl"
 import "@com.github.actions/Workflow.pkl"
 import "@deepToTyped/deepToTyped.pkl"
 
@@ -82,7 +82,7 @@ local locks: Map<String, String> =
   let (locksJob = workflow.jobs.toMap().values.first)
     locksJob.steps.toList().toMap((step) -> step.name!!, (step) -> step.uses!!)
 
-local outputMode = read?("prop:mode")
+local mode = read?("prop:mode")
 local generator: LockfileGenerator = new {
   workflows = module.workflows.toMap().values
 }
@@ -104,33 +104,44 @@ local effectiveDependabot: DependabotV2 = (dependabot) {
   }
 }
 
-output {
-  text = "This module only supports multiple-file output. Evaluate me with the `-m` flag."
-  files {
-    when (outputMode == "lockfile") {
-      [lockfileName] = generator.result.output
-      ["dependabot.yml"] = effectiveDependabot.output
-    } else {
-      for (name, workflow in workflows) {
-        [name] = (workflow.output) {
-          renderer {
-            converters {
-              [Step.getClass()] = (it) ->
+local function applyMappedStep(step: Workflow.Step, mapped: String) =
+  if (step is AbstractTypedStep)
+    (step) { sha = mapped.split("@").last }
+  else
+    (step) { uses = mapped }
+
+local workflowFiles: Mapping<String, FileOutput> = new {
+  for (name, workflow in workflows) {
+    [name] = (workflow.output) {
+      when (mode != "test") {
+        renderer {
+          converters {
+            [AbstractStep.getClass()] = (it) ->
+              if (it.uses == null)
+                it
+              else
                 let (mapped = locks.getOrNull(it.uses))
                   if (mapped == null)
-                    it
+                    throw(
+                      "The lockfile is out-dated and must be re-generated (using `-p mode=lockfile`)"
+                    )
                   else
-                    (it) { uses = mapped }
-              [AbstractTypedStep.getClass()] = (it) ->
-                let (mapped = locks.getOrNull(it.uses))
-                  if (mapped == null)
-                    it
-                  else
-                    (it) { sha = mapped.split("@").last }
-            }
+                    applyMappedStep(it, mapped)
           }
         }
       }
     }
   }
+}
+
+output {
+  text = "This module only supports multiple-file output. Evaluate me with the `-m` flag."
+  files =
+    if (mode == "lockfile")
+      new {
+        [lockfileName] = generator.result.output
+        ["dependabot.yml"] = effectiveDependabot.output
+      }
+    else
+      workflowFiles
 }

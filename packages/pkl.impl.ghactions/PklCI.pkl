@@ -121,19 +121,6 @@ triggerDocsBuild: "none" | "release" | "both" = "none"
 ///
 /// Does not do anything if the repo's owner is not `apple`.
 triggerPackageDocsBuild: "none" | "main" | "release" = "none"
-//
-// local yamlParser = new yaml.Parser { useMapping = true }
-//
-// local lockfileWorkflow: Workflow? =
-//   let (pwd = read("env:PWD"))
-//   let (yamlContents = read?("file://\(pwd)/.github/workflows/__lockfile__.yml"))
-//     let (parsed =
-//     if (yamlContents == null)
-//       null
-//     else
-//       yamlParser.parse(yamlContents) as Mapping
-//     )
-//       deepToTyped.apply(Workflow.getClass(), parsed) as Workflow
 
 class TestReports {
   /// Paths, directories, and globs to junit test reports, to be processed by a GitHub Actions test reporter.
