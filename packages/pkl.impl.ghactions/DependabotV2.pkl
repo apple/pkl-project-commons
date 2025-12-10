@@ -24,7 +24,11 @@ fixed version = 2
 
 updates: Listing<Update>
 
-registries: ItemRegistry?
+/// The top-level registries key is optional.
+///
+/// It allows you to specify authentication details that
+/// Dependabot can use to access private package registries.
+registries: Mapping<String(matches(Regex(".+"))), Registry>(length >= 1)?
 
 /// Define groups that span multiple package ecosystems, allowing consolidated pull requests across
 /// different ecosystems
@@ -196,7 +200,7 @@ class Ignore {
 
   /// Use to ignore types of updates. You can combine this with 'dependency-name: "*"' to ignore
   /// particular update-types for all dependencies.
-  `update-types`: UpdateTypes?
+  `update-types`: Listing<UpdateType>(!isEmpty, isDistinct)?
 
   /// Use to ignore specific versions or ranges of versions. If you want to define a range, use the
   /// standard pattern for the package manager.
@@ -915,10 +919,8 @@ typealias Timezone =
 
 typealias DependencyType = "direct" | "indirect" | "all" | "production" | "development"
 
-typealias UpdateTypes =
-  Listing<
-    "version-update:semver-major" | "version-update:semver-minor" | "version-update:semver-patch",
-  >(!isEmpty, isDistinct)
+typealias UpdateType =
+  "version-update:semver-major" | "version-update:semver-minor" | "version-update:semver-patch"
 
 typealias InsecureExternalCodeExecution = "allow" | "deny"
 
@@ -957,10 +959,6 @@ typealias ScheduleDay =
 
 typealias ScheduleInterval =
   "daily" | "weekly" | "monthly" | "quarterly" | "semiannually" | "yearly" | "cron"
-
-/// The top-level registries key is optional. It allows you to specify authentication details that
-/// Dependabot can use to access private package registries.
-typealias ItemRegistry = Mapping<String(matches(Regex(".+"))), Registry>(length >= 1)
 
 output {
   renderer = new YamlRenderer {}

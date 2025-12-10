@@ -29,13 +29,14 @@ open module pkl.impl.ghactions.VersionLockedCI
 
 import "pkl:yaml"
 
-import "@com.github.actions/AbstractStep.pkl"
 import "@com.github.actions/AbstractTypedStep.pkl"
+import "@com.github.actions/catalog.pkl"
 import "@com.github.actions/Workflow.pkl"
 import "@deepToTyped/deepToTyped.pkl"
 
 import "DependabotV2.pkl"
 import "LockfileGenerator.pkl"
+import "steps/SetupPkl.pkl"
 
 /// The effective workflows produced by this job, keyed by the workflow filename.
 ///
@@ -82,7 +83,12 @@ local locks: Map<String, String> =
   let (locksJob = workflow.jobs.toMap().values.first)
     locksJob.steps.toList().toMap((step) -> step.name!!, (step) -> step.uses!!)
 
-local mode = read?("prop:mode")
+/// Two modes:
+/// * `test`: don't replace versions with SHAs (internal development option)
+/// * `lockfile`: instead of generating normal workflow files, generate `workflows/__lockfile__.yml`
+///    and `dependabot.yml`.
+local mode = read?("prop:mode") as ("test" | "lockfile")?
+
 local generator: LockfileGenerator = new {
   workflows = module.workflows.toMap().values
 }
@@ -110,29 +116,92 @@ local function applyMappedStep(step: Workflow.Step, mapped: String) =
   else
     (step) { uses = mapped }
 
-local workflowFiles: Mapping<String, FileOutput> = new {
-  for (name, workflow in workflows) {
-    [name] = (workflow.output) {
-      when (mode != "test") {
-        renderer {
-          converters {
-            [AbstractStep.getClass()] = (it) ->
-              if (it.uses == null)
-                it
-              else
-                let (mapped = locks.getOrNull(it.uses))
-                  if (mapped == null)
-                    throw(
-                      "The lockfile is out-dated and must be re-generated (using `-p mode=lockfile`)"
-                    )
-                  else
-                    applyMappedStep(it, mapped)
+// When dependabot submits a PR, add a commit that generates the rest of the workflows.
+local dependabotPrPolish: Workflow = new {
+  name = "dependabot-pr-polish"
+  on {
+    pull_request {}
+  }
+  jobs {
+    ["update-pkl"] {
+      `if` = "github.actor == 'dependabot[bot]'"
+      `runs-on` = "ubuntu-latest"
+      steps {
+        (catalog.`actions/checkout@v6`) {
+          with {
+            `persist-credentials` = true
           }
+        }
+        new {
+          name = "Check diff"
+          id = "check-lockfile"
+          // language=bash
+          run =
+            """
+            if git diff HEAD~1 | grep -q .github/workflows/__lockfile__.yml; then
+              echo "lockfile-changed=true" >> $GITHUB_OUTPUT
+            else
+              echo "lockfile-changed=false" >> $GITHUB_OUTPUT
+            fi
+            """
+        }
+        (new SetupPkl { version = "0.30.1" }.step) {
+          `if` = "steps.check-lockfile.outputs.lockfile-changed == 'true'"
+        }
+        new {
+          name = "Update generated workflows"
+          `if` = "steps.check-lockfile.outputs.lockfile-changed == 'true'"
+          run = "pkl eval --project-dir .github/ -m .github/ .github/index.pkl"
+        }
+        new {
+          name = "Commit and push"
+          `if` = "steps.check-lockfile.outputs.lockfile-changed == 'true'"
+          // language=bash
+          run =
+            """
+            git add .
+            git commit -m "Update generated Pkl-based workflows"
+            git push
+            """
         }
       }
     }
   }
 }
+
+local effectiveWorkflows = (workflows) {
+  ["workflows/__dependabot_pr_polish__.yml"] = dependabotPrPolish
+}
+
+local mappedWorkflows: Mapping<String, Workflow> =
+  if (mode == "test")
+    effectiveWorkflows
+  else
+    new {
+      for (name, workflow in effectiveWorkflows) {
+        [name] = (workflow) {
+          jobs {
+            [[true]] {
+              steps = new {
+                for (step in super.steps) {
+                  step |> replaceVersionWithSha
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+local replaceVersionWithSha = (it) ->
+  if (it.uses == null)
+    it
+  else
+    let (mapped = locks.getOrNull(it.uses))
+      if (mapped == null)
+        throw("The lockfile is out-dated and must be re-generated (using `-p mode=lockfile`)")
+      else
+        applyMappedStep(it, mapped)
 
 output {
   text = "This module only supports multiple-file output. Evaluate me with the `-m` flag."
@@ -143,5 +212,9 @@ output {
         ["dependabot.yml"] = effectiveDependabot.output
       }
     else
-      workflowFiles
+      new {
+        for (name, workflow in mappedWorkflows) {
+          [name] = workflow.output
+        }
+      }
 }

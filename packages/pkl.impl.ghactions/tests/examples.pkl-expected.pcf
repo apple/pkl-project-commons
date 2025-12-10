@@ -56,7 +56,7 @@ examples {
               git diff --name-only
               exit 1
             fi
-
+    
     """
   }
   ["checkout.pkl -- workflows/main.yml"] {
@@ -81,7 +81,7 @@ examples {
         - uses: actions/checkout@v6
           with:
             persist-credentials: false
-
+    
     """
   }
   ["checkout.pkl -- workflows/build.yml"] {
@@ -107,7 +107,56 @@ examples {
         - uses: actions/checkout@v6
           with:
             persist-credentials: false
-
+    
+    """
+  }
+  ["checkout.pkl -- workflows/__dependabot_pr_polish__.yml"] {
+    """
+    # Generated from Workflow.pkl. DO NOT EDIT.
+    name: dependabot-pr-polish
+    'on':
+      pull_request: {}
+    jobs:
+      update-pkl:
+        if: github.actor == 'dependabot[bot]'
+        runs-on: ubuntu-latest
+        steps:
+        - uses: actions/checkout@v6
+          with:
+            persist-credentials: true
+        - name: Check diff
+          id: check-lockfile
+          run: |-
+            if git diff HEAD~1 | grep -q .github/workflows/__lockfile__.yml; then
+              echo "lockfile-changed=true" >> $GITHUB_OUTPUT
+            else
+              echo "lockfile-changed=false" >> $GITHUB_OUTPUT
+            fi
+        - name: Setup Pkl
+          id: setup-pkl
+          if: steps.check-lockfile.outputs.lockfile-changed == 'true'
+          env:
+            PKL_VERSION: 0.30.1
+            PKL_FILENAME: pkl
+            PKL_DOWNLOAD_URL: https://github.com/apple/pkl/releases/download/0.30.1/pkl-linux-amd64
+          shell: bash
+          run: |-
+            DIR="$(mktemp -d /tmp/pkl-$PKL_VERSION-XXXXXX)"
+            PKL_EXEC="$DIR/$PKL_FILENAME"
+            curl -sfL -o $PKL_EXEC "$PKL_DOWNLOAD_URL"
+            chmod +x $PKL_EXEC
+            echo "$DIR" >> "$GITHUB_PATH"
+            echo "pkl_exec=$PKL_EXEC" >> "$GITHUB_OUTPUT"
+        - name: Update generated workflows
+          if: steps.check-lockfile.outputs.lockfile-changed == 'true'
+          run: pkl eval --project-dir .github/ -m .github/ .github/index.pkl
+        - name: Commit and push
+          if: steps.check-lockfile.outputs.lockfile-changed == 'true'
+          run: |-
+            git add .
+            git commit -m "Update generated Pkl-based workflows"
+            git push
+    
     """
   }
   ["hawkeyeCheck.pkl"] {
@@ -127,7 +176,7 @@ examples {
         - run: hawkeye check --config licenserc.toml --fail-if-unknown
         container:
           image: ghcr.io/korandoru/hawkeye@sha256:c3ab994c0d81f3d116aabf9afc534e18648e3e90d7525d741c1e99dd8166ec85
-
+    
     """
   }
   ["macosBuild.pkl -- workflows/prb.yml"] {
@@ -194,7 +243,7 @@ examples {
               git diff --name-only
               exit 1
             fi
-
+    
     """
   }
   ["macosBuild.pkl -- workflows/main.yml"] {
@@ -227,7 +276,7 @@ examples {
           with:
             comment_mode: 'off'
             files: '**.xml'
-
+    
     """
   }
   ["macosBuild.pkl -- workflows/build.yml"] {
@@ -261,7 +310,7 @@ examples {
           with:
             comment_mode: 'off'
             files: '**.xml'
-
+    
     """
   }
   ["macosBuild.pkl -- workflows/test_report.yml"] {
@@ -300,7 +349,56 @@ examples {
             files: artifacts/**/*.xml
             event_file: artifacts/test-results-event-file/event.json
             event_name: ${{ github.event.workflow_run.event }}
-
+    
+    """
+  }
+  ["macosBuild.pkl -- workflows/__dependabot_pr_polish__.yml"] {
+    """
+    # Generated from Workflow.pkl. DO NOT EDIT.
+    name: dependabot-pr-polish
+    'on':
+      pull_request: {}
+    jobs:
+      update-pkl:
+        if: github.actor == 'dependabot[bot]'
+        runs-on: ubuntu-latest
+        steps:
+        - uses: actions/checkout@v6
+          with:
+            persist-credentials: true
+        - name: Check diff
+          id: check-lockfile
+          run: |-
+            if git diff HEAD~1 | grep -q .github/workflows/__lockfile__.yml; then
+              echo "lockfile-changed=true" >> $GITHUB_OUTPUT
+            else
+              echo "lockfile-changed=false" >> $GITHUB_OUTPUT
+            fi
+        - name: Setup Pkl
+          id: setup-pkl
+          if: steps.check-lockfile.outputs.lockfile-changed == 'true'
+          env:
+            PKL_VERSION: 0.30.1
+            PKL_FILENAME: pkl
+            PKL_DOWNLOAD_URL: https://github.com/apple/pkl/releases/download/0.30.1/pkl-linux-amd64
+          shell: bash
+          run: |-
+            DIR="$(mktemp -d /tmp/pkl-$PKL_VERSION-XXXXXX)"
+            PKL_EXEC="$DIR/$PKL_FILENAME"
+            curl -sfL -o $PKL_EXEC "$PKL_DOWNLOAD_URL"
+            chmod +x $PKL_EXEC
+            echo "$DIR" >> "$GITHUB_PATH"
+            echo "pkl_exec=$PKL_EXEC" >> "$GITHUB_OUTPUT"
+        - name: Update generated workflows
+          if: steps.check-lockfile.outputs.lockfile-changed == 'true'
+          run: pkl eval --project-dir .github/ -m .github/ .github/index.pkl
+        - name: Commit and push
+          if: steps.check-lockfile.outputs.lockfile-changed == 'true'
+          run: |-
+            git add .
+            git commit -m "Update generated Pkl-based workflows"
+            git push
+    
     """
   }
 }
