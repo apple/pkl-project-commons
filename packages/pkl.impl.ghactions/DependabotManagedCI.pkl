@@ -49,19 +49,11 @@ workflows: Mapping<String, Workflow>
 
 /// Dependabot configuration.
 ///
-/// The github-actions ecosystem will be automatically added to this.
+/// The `github-actions` ecosystem will be automatically added to this.
 dependabot: DependabotV2
 
-/// A map of action name to its checksum.
-///
-/// Parsed from `__lockfile__.yml`.
-///
-/// e.g. `Map("actions/checkout@v5", "actions/checkout@abc123")`
-local locks: Map<String, LockfileGenerator.LockEntry> =
-  generator.currentLocks ?? throw("Missing lockfile! Run with -p mode=lockfile to generate it.")
-
 /// Two modes:
-/// * `test`: don't replace versions with SHAs (internal development option)
+/// * `test`: don't replace versions with SHAs (internal development option).
 /// * `lockfile`: instead of generating normal workflow files, generate `workflows/__lockfile__.yml`
 ///    and `dependabot.yml`.
 local mode = read?("prop:mode") as ("test" | "lockfile")?
@@ -70,7 +62,10 @@ local generator: LockfileGenerator = new {
   workflows = module.workflows.toMap().values
 }
 
-local effectiveDependabot: DependabotV2 = (dependabot) {
+local locks =
+  generator.currentLocks ?? throw("Missing lockfile! Run with -p mode=lockfile to generate it.")
+
+local effectiveDependabot = (dependabot) {
   updates {
     new {
       `package-ecosystem` = "github-actions"
@@ -144,7 +139,8 @@ local actualWorkflows = (workflows) {
   ["workflows/__dependabot_pr_polish__.yml"] = dependabotPrPolish
 }
 
-local mappedWorkflows: Mapping<String, Workflow> =
+local convertedWorkflows: Mapping<String, Workflow> =
+  // don't do any lockfile stuff if in test mode.
   if (mode == "test")
     actualWorkflows
   else
@@ -186,7 +182,7 @@ output {
       }
     else
       new {
-        for (name, workflow in mappedWorkflows) {
+        for (name, workflow in convertedWorkflows) {
           [name] = workflow.output
         }
       }

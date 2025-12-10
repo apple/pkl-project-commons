@@ -13,7 +13,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //===----------------------------------------------------------------------===//
-/// Generates
+/// Generates the "lockfile" based off the defined workflows, as well as the exsiting lockfile (if
+/// exists).
+///
+/// If an action does not already exist in the lockfile, fetches the git sha from GitHub.
+/// Otherwise, uses the git sha as currently defined.
 module pkl.impl.ghactions.LockfileGenerator
 
 import "pkl:yaml"
