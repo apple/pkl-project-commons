@@ -94,20 +94,28 @@ local class ActionMeta {
     sha = self.sha
   }
 
-  /// Don't use api.github.com because of rate limiting
+  /// Don't use api.github.com because of rate limiting.
   ///
   /// The response from this API call is in
   /// [pkt-line format](https://git-scm.com/docs/protocol-common#_pkt_line_format).
+  ///
+  /// There are possibly two tags (one which is annotated).
+  /// If there are, we need the one that ends with `^{}`.
   local function getSha(org: String, repo: String, tag: String): String =
     let (
       gitOutput = read("https://github.com/\(org)/\(repo).git/info/refs?service=git-upload-pack")
     )
-      gitOutput.text
-        .split("\n")
-        .find((it) -> it.endsWith("refs/tags/\(tag)"))
-        .split(" ")
-        .first
-        .drop(4)
+    let (lines = gitOutput.text.split("\n"))
+    let (
+      tag =
+        lines.findOrNull((it) -> it.endsWith("refs/tags/\(tag)^{}"))
+          ?? lines.findOrNull((it) -> it.endsWith("refs/tags/\(tag)"))
+    )
+      if (tag == null)
+        throw("Cannot resolve git commit SHA for tag \(tag)")
+      else
+        // first four bytes represent content length
+        tag.split(" ").first.drop(4)
 }
 
 local derivedLocks: Locks =
