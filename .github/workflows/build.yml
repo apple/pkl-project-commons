@@ -31,7 +31,7 @@ jobs:
       run: ./gradlew build
     - name: Publish test results
       if: '!cancelled()'
-      uses: EnricoMi/publish-unit-test-result-action@6e8f8c55b476f977d1c58cfbd7e337cbf86d917f # v2
+      uses: EnricoMi/publish-unit-test-result-action@34d7c956a59aed1bfebf31df77b8de55db9bbaaf # v2
       with:
         comment_mode: 'off'
         files: build/test-results/**/*.xml
