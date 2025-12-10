@@ -15,7 +15,7 @@
 //===----------------------------------------------------------------------===//
 module pkl.impl.ghactions.PklCI
 
-extends "VersionLockedCI.pkl"
+extends "DependabotManagedCI.pkl"
 
 import "@com.github.actions/actions/checkout/v6/Checkout.pkl"
 import "@com.github.actions/catalog.pkl"
@@ -25,7 +25,6 @@ import "@com.github.actions/Workflow.pkl"
 import "actions/PublishUnitTestResult.pkl"
 import "helpers.pkl"
 import "jobs/CheckPklEval.pkl"
-import "steps/SetupPkl.pkl"
 import "util.pkl"
 
 local checkPklGHADefinitions: CheckPklEval = new {

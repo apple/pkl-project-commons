@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //===----------------------------------------------------------------------===//
-/// A template for writing multiple workflows, whose actions are pinned to specific SHAs.
+/// A template for writing Pkl-based workflows, whose actions are pinned to specific SHAs, and
+/// updated by dependabot.
 ///
 /// Typically, this module is placed in `.github/index.pkl`.
 /// To produce output, the `-m` (or `--multiple-file-output-path`) flag must pointed at the repo's
@@ -25,14 +26,11 @@
 /// must be generated.
 /// To generate these two files, pass `--prop mode=lockfile` during evaluation.
 // TODO move me to pkl-pantry
-open module pkl.impl.ghactions.VersionLockedCI
-
-import "pkl:yaml"
+open module pkl.impl.ghactions.DependabotManagedCI
 
 import "@com.github.actions/AbstractTypedStep.pkl"
 import "@com.github.actions/catalog.pkl"
 import "@com.github.actions/Workflow.pkl"
-import "@deepToTyped/deepToTyped.pkl"
 
 import "DependabotV2.pkl"
 import "LockfileGenerator.pkl"
@@ -54,34 +52,13 @@ workflows: Mapping<String, Workflow>
 /// The github-actions ecosystem will be automatically added to this.
 dependabot: DependabotV2
 
-local lockfileName = "workflows/__lockfile__.yml"
-
-local yamlParser: yaml.Parser = new { useMapping = true }
-
 /// A map of action name to its checksum.
 ///
 /// Parsed from `__lockfile__.yml`.
 ///
 /// e.g. `Map("actions/checkout@v5", "actions/checkout@abc123")`
-local locks: Map<String, String> =
-  let (
-    lockfileResource: Resource =
-      let (pwd = read("env:PWD"))
-      let (
-        // allow running from either `.github` dir or repo root
-        resource =
-          read?("file://\(pwd)/\(lockfileName)")
-            ?? read?("file://\(pwd)/.github/\(lockfileName)")
-      )
-        if (resource == null)
-          throw("Missing lockfile! Run with `-p mode=lockfile` to generate it.")
-        else
-          resource
-  )
-  let (mapping = yamlParser.parse(lockfileResource) as Mapping)
-  let (workflow = deepToTyped.apply(Workflow.getClass(), mapping) as Workflow)
-  let (locksJob = workflow.jobs.toMap().values.first)
-    locksJob.steps.toList().toMap((step) -> step.name!!, (step) -> step.uses!!)
+local locks: Map<String, LockfileGenerator.LockEntry> =
+  generator.currentLocks ?? throw("Missing lockfile! Run with -p mode=lockfile to generate it.")
 
 /// Two modes:
 /// * `test`: don't replace versions with SHAs (internal development option)
@@ -102,19 +79,13 @@ local effectiveDependabot: DependabotV2 = (dependabot) {
         interval = "weekly"
       }
       `exclude-paths` {
-        for (name, _ in workflows) {
+        for (name, _ in actualWorkflows) {
           ".github/\(name)"
         }
       }
     }
   }
 }
-
-local function applyMappedStep(step: Workflow.Step, mapped: String) =
-  if (step is AbstractTypedStep)
-    (step) { sha = mapped.split("@").last }
-  else
-    (step) { uses = mapped }
 
 // When dependabot submits a PR, add a commit that generates the rest of the workflows.
 local dependabotPrPolish: Workflow = new {
@@ -169,16 +140,16 @@ local dependabotPrPolish: Workflow = new {
   }
 }
 
-local effectiveWorkflows = (workflows) {
+local actualWorkflows = (workflows) {
   ["workflows/__dependabot_pr_polish__.yml"] = dependabotPrPolish
 }
 
 local mappedWorkflows: Mapping<String, Workflow> =
   if (mode == "test")
-    effectiveWorkflows
+    actualWorkflows
   else
     new {
-      for (name, workflow in effectiveWorkflows) {
+      for (name, workflow in actualWorkflows) {
         [name] = (workflow) {
           jobs {
             [[true]] {
@@ -193,22 +164,24 @@ local mappedWorkflows: Mapping<String, Workflow> =
       }
     }
 
-local replaceVersionWithSha = (it) ->
-  if (it.uses == null)
-    it
+local replaceVersionWithSha = (step: Workflow.Step) ->
+  if (step.uses == null)
+    step
   else
-    let (mapped = locks.getOrNull(it.uses))
-      if (mapped == null)
+    let (lockEntry = locks.getOrNull(step.uses))
+      if (lockEntry == null)
         throw("The lockfile is out-dated and must be re-generated (using `-p mode=lockfile`)")
+      else if (step is AbstractTypedStep)
+        (step) { sha = lockEntry.sha }
       else
-        applyMappedStep(it, mapped)
+        (step) { uses = lockEntry.usesWithChecksum }
 
 output {
   text = "This module only supports multiple-file output. Evaluate me with the `-m` flag."
   files =
     if (mode == "lockfile")
       new {
-        [lockfileName] = generator.result.output
+        [generator.lockfileName] = generator.result.output
         ["dependabot.yml"] = effectiveDependabot.output
       }
     else

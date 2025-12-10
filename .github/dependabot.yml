@@ -6,6 +6,7 @@ updates:
   - .github/workflows/main.yml
   - .github/workflows/build.yml
   - .github/workflows/test_report.yml
+  - .github/workflows/__dependabot_pr_polish__.yml
   package-ecosystem: github-actions
   schedule:
     interval: weekly
