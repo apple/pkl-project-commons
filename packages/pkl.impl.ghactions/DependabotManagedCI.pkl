@@ -177,7 +177,7 @@ local replaceVersionWithSha = (step: Workflow.Step) ->
         (step) { uses = lockEntry.usesWithChecksum }
 
 output {
-  text = "This module only supports multiple-file output. Evaluate me with the `-m` flag."
+  text = throw("This module only supports multiple-file output. Evaluate me with the `-m` flag.")
   files =
     if (mode == "lockfile")
       new {
