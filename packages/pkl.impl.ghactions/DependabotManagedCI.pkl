@@ -28,13 +28,11 @@
 // TODO move me to pkl-pantry
 open module pkl.impl.ghactions.DependabotManagedCI
 
-import "@com.github.actions/AbstractTypedStep.pkl"
-import "@com.github.actions/catalog.pkl"
 import "@com.github.actions/Workflow.pkl"
 
 import "DependabotV2.pkl"
 import "LockfileGenerator.pkl"
-import "steps/SetupPkl.pkl"
+import "util.pkl"
 
 /// The effective workflows produced by this job, keyed by the workflow filename.
 ///
@@ -73,104 +71,24 @@ local effectiveDependabot = (dependabot) {
       schedule {
         interval = "weekly"
       }
-      `exclude-paths` {
-        for (name, _ in actualWorkflows) {
-          ".github/\(name)"
-        }
-      }
     }
   }
-}
-
-// When dependabot submits a PR, add a commit that generates the rest of the workflows.
-local dependabotPrPolish: Workflow = new {
-  name = "dependabot-pr-polish"
-  on {
-    pull_request {}
-  }
-  jobs {
-    ["update-pkl"] {
-      `if` = "github.actor == 'dependabot[bot]'"
-      `runs-on` = "ubuntu-latest"
-      steps {
-        (catalog.`actions/checkout@v6`) {
-          with {
-            `persist-credentials` = true
-          }
-        }
-        new {
-          name = "Check diff"
-          id = "check-lockfile"
-          // language=bash
-          run =
-            """
-            if git diff HEAD~1 | grep -q .github/workflows/__lockfile__.yml; then
-              echo "lockfile-changed=true" >> $GITHUB_OUTPUT
-            else
-              echo "lockfile-changed=false" >> $GITHUB_OUTPUT
-            fi
-            """
-        }
-        (new SetupPkl { version = "0.30.1" }.step) {
-          `if` = "steps.check-lockfile.outputs.lockfile-changed == 'true'"
-        }
-        new {
-          name = "Update generated workflows"
-          `if` = "steps.check-lockfile.outputs.lockfile-changed == 'true'"
-          run = "pkl eval --project-dir .github/ -m .github/ .github/index.pkl"
-        }
-        new {
-          name = "Commit and push"
-          `if` = "steps.check-lockfile.outputs.lockfile-changed == 'true'"
-          // language=bash
-          run =
-            """
-            git add .
-            git commit -m "Update generated Pkl-based workflows"
-            git push
-            """
-        }
-      }
-    }
-  }
-}
-
-local actualWorkflows = (workflows) {
-  ["workflows/__dependabot_pr_polish__.yml"] = dependabotPrPolish
 }
 
 local convertedWorkflows: Mapping<String, Workflow> =
   // don't do any lockfile stuff if in test mode.
   if (mode == "test")
-    actualWorkflows
+    workflows
   else
     new {
-      for (name, workflow in actualWorkflows) {
+      for (name, workflow in workflows) {
         [name] = (workflow) {
-          jobs {
-            [[true]] {
-              steps = new {
-                for (step in super.steps) {
-                  step |> replaceVersionWithSha
-                }
-              }
-            }
+          output {
+            text = super.text |> util.replaceUses(locks)
           }
         }
       }
     }
-
-local replaceVersionWithSha = (step: Workflow.Step) ->
-  if (step.uses == null)
-    step
-  else
-    let (lockEntry = locks.getOrNull(step.uses))
-      if (lockEntry == null)
-        throw("The lockfile is out-dated and must be re-generated (using `-p mode=lockfile`)")
-      else if (step is AbstractTypedStep)
-        (step) { sha = lockEntry.sha }
-      else
-        (step) { uses = lockEntry.usesWithChecksum }
 
 output {
   text = throw("This module only supports multiple-file output. Evaluate me with the `-m` flag.")

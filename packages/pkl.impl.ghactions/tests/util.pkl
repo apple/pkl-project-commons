@@ -17,6 +17,7 @@ amends "pkl:test"
 
 import "@com.github.actions/Workflow.pkl"
 
+import "../LockfileGenerator.pkl"
 import "../util.pkl"
 
 facts {
@@ -28,5 +29,24 @@ facts {
       == "windows"
     util.determineOS(new Workflow.Job { `runs-on` = new Listing { "self-hosted"; "macos" } })
       == "macOS"
+  }
+  ["replaceUses"] {
+    local locks: Mapping<String, LockfileGenerator.LockEntry> = new {
+      ["actions/checkout@v6"] {
+        base = "actions/checkout"
+        version = "v6"
+        sha = "abc123"
+      }
+    }
+    (
+      """
+      foo:
+        uses: actions/checkout@v6
+      """ |> util.replaceUses(locks.toMap())
+    )
+      == """
+      foo:
+        uses: actions/checkout@abc123 # v6
+      """
   }
 }
