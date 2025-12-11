@@ -56,17 +56,18 @@ local const lockfileResource =
     read?("file://\(pwd)/\(lockfileName)")
       ?? read?("file://\(pwd)/.github/\(lockfileName)")
 
-local allStepsWithVersionedUses =
+local allActions =
   workflows
     .flatMap((it) -> it.jobs.toMap().values)
     .flatMap((it) -> it.steps.toList())
-    .filter((it) -> it.uses != null && !it.uses.startsWith("./") && it.uses.contains("@v"))
-    .distinctBy((it) -> it.uses)
+    .mapNonNull((it) -> it.uses)
+    .filter((it) -> !it.startsWith("./") && it.contains("@v"))
+    .toSet() as Set<String>
 
 local newLocks: Map<String, LockEntry> =
-  allStepsWithVersionedUses
-    .filter((it) -> currentLocks?.containsKey(it.uses) != true)
-    .map((it) -> new ActionMeta { uses = it.uses!! }.lock)
+  allActions
+    .difference(currentLocks.keys)
+    .map((it) -> new ActionMeta { uses = it }.lock)
     .toMap((it) -> it.usesWithTag, (it) -> it)
 
 local class ActionMeta {
@@ -122,19 +123,14 @@ fixed locks: Locks =
   if (currentLocks == null)
     newLocks
   else
-    currentLocks + newLocks
+    currentLocks.filter((key, _) -> allActions.contains(key))
+      + newLocks
 
 fixed lockfileWorkflow: Workflow = new {
   name = "__lockfile__"
-  on {
-    schedule {
-      // never run (crontab means: run on February 31st)
-      // language=cronexp
-      new { cron = "* * 31 2 *" }
-    }
-  }
   jobs {
     ["locks"] {
+      `if` = "false"
       `runs-on` = "nothing"
     }
   }
