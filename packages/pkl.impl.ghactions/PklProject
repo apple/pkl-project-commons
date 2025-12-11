@@ -17,12 +17,12 @@
 amends "../basePklProject.pkl"
 
 package {
-  version = "1.1.2"
+  version = "1.1.3"
 }
 
 dependencies {
   ["com.github.actions"] {
-    uri = "package://pkg.pkl-lang.org/pkl-pantry/com.github.actions@1.2.0"
+    uri = "package://pkg.pkl-lang.org/pkl-pantry/com.github.actions@1.3.0"
   }
   ["com.github.dependabot"] {
     uri = "package://pkg.pkl-lang.org/pkl-pantry/com.github.dependabot@1.0.0"

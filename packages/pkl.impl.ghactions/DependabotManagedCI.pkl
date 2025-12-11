@@ -71,12 +71,6 @@ local effectiveDependabot = (dependabot) {
   }
 }
 
-local convertUses = (uses: String?) ->
-  if (uses == null)
-    null
-  else
-    locks[uses].renderDirective
-
 local convertedWorkflows: Mapping<String, Workflow> =
   // don't do any lockfile stuff if in test mode.
   if (testMode)
@@ -87,7 +81,7 @@ local convertedWorkflows: Mapping<String, Workflow> =
         output {
           renderer {
             converters {
-              ["jobs[*].steps[*].uses"] = convertUses
+              ["jobs[*].steps[*].uses"] = (it) -> locks.getOrNull(it)?.renderDirective
             }
           }
         }
