@@ -95,6 +95,10 @@ local class ActionMeta {
     sha = self.sha
   }
 
+  /// Resolve the SHA given the action version.
+  ///
+  /// The version can either be a git tag, or a branch name.
+  ///
   /// Don't use api.github.com because of rate limiting.
   ///
   /// The response from this API call is in
@@ -102,15 +106,16 @@ local class ActionMeta {
   ///
   /// There are possibly two tags (one which is annotated).
   /// If there are, we need the one that ends with `^{}`.
-  local function getSha(org: String, repo: String, tag: String): String =
+  local function getSha(org: String, repo: String, version: String): String =
     let (
       gitOutput = read("https://github.com/\(org)/\(repo).git/info/refs?service=git-upload-pack")
     )
     let (lines = gitOutput.text.split("\n"))
     let (
       tag =
-        lines.findOrNull((it) -> it.endsWith("refs/tags/\(tag)^{}"))
-          ?? lines.findOrNull((it) -> it.endsWith("refs/tags/\(tag)"))
+        lines.findOrNull((it) -> it.endsWith("refs/tags/\(version)^{}"))
+          ?? lines.findOrNull((it) -> it.endsWith("refs/tags/\(version)"))
+          ?? lines.findOrNull((it) -> it.endsWith("refs/heads/\(version)"))
     )
       if (tag == null)
         throw("Cannot resolve git commit SHA for tag \(tag)")
