@@ -66,7 +66,7 @@ local allActions =
 
 local newLocks: Map<String, LockEntry> =
   allActions
-    .difference(currentLocks.keys)
+    .difference(currentLocks?.keys ?? Set())
     .map((it) -> new ActionMeta { uses = it }.lock)
     .toMap((it) -> it.usesWithTag, (it) -> it)
 
