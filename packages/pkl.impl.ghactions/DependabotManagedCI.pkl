@@ -81,7 +81,7 @@ local convertedWorkflows: Mapping<String, Workflow> =
         output {
           renderer {
             converters {
-              ["jobs[*].steps[*].uses"] = (it) -> locks.getOrNull(it)?.renderDirective
+              ["jobs[*].steps[*].uses"] = (it) -> locks.getOrNull(it)?.renderDirective ?? it
             }
           }
         }
