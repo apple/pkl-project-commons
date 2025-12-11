@@ -65,7 +65,7 @@ local allStepsWithVersionedUses =
 
 local newLocks: Map<String, LockEntry> =
   allStepsWithVersionedUses
-    .filter((it) -> currentLocks?.containsKey(it.uses) == false)
+    .filter((it) -> currentLocks?.containsKey(it.uses) != true)
     .map((it) -> new ActionMeta { uses = it.uses!! }.lock)
     .toMap((it) -> it.usesWithTag, (it) -> it)
 
