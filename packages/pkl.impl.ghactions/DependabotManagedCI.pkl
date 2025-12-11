@@ -59,6 +59,14 @@ local effectiveDependabot = (dependabot) {
       schedule {
         interval = "weekly"
       }
+      ignore {
+        new {
+          `dependency-name` = "*"
+          `update-types` {
+            "version-update:semver-major"
+          }
+        }
+      }
     }
   }
 }

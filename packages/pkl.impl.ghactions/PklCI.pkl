@@ -418,7 +418,7 @@ local withPublishTestResultsForMultipleJobs: Mixin<Workflow.Jobs> = (it) -> (it)
       checks = "write"
     }
     steps {
-      (catalog.`actions/download-artifact@v5`) {
+      (catalog.`actions/download-artifact@v6`) {
         with {
           pattern = "\(TEST_RESULT_XML_ARTIFACT_NAME)-*"
         }
