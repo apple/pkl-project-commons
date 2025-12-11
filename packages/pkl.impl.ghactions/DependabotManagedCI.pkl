@@ -19,20 +19,13 @@
 /// Typically, this module is placed in `.github/index.pkl`.
 /// To produce output, the `-m` (or `--multiple-file-output-path`) flag must pointed at the repo's
 /// `.github` directory.
-///
-/// ## Initialization
-///
-/// When first using this module, or whenever a new action is added, the lockfile and dependabot.yml
-/// must be generated.
-/// To generate these two files, pass `--prop mode=lockfile` during evaluation.
 // TODO move me to pkl-pantry
 open module pkl.impl.ghactions.DependabotManagedCI
 
 import "@com.github.actions/Workflow.pkl"
+import "@com.github.dependabot/v2/Dependabot.pkl"
 
-import "DependabotV2.pkl"
 import "LockfileGenerator.pkl"
-import "util.pkl"
 
 /// The effective workflows produced by this job, keyed by the workflow filename.
 ///
@@ -48,20 +41,15 @@ workflows: Mapping<String, Workflow>
 /// Dependabot configuration.
 ///
 /// The `github-actions` ecosystem will be automatically added to this.
-dependabot: DependabotV2
+dependabot: Dependabot
 
-/// Two modes:
-/// * `test`: don't replace versions with SHAs (internal development option).
-/// * `lockfile`: instead of generating normal workflow files, generate `workflows/__lockfile__.yml`
-///    and `dependabot.yml`.
-local mode = read?("prop:mode") as ("test" | "lockfile")?
+local testMode = read?("prop:testMode") != null
 
 local generator: LockfileGenerator = new {
   workflows = module.workflows.toMap().values
 }
 
-local locks =
-  generator.currentLocks ?? throw("Missing lockfile! Run with -p mode=lockfile to generate it.")
+local locks = generator.locks
 
 local effectiveDependabot = (dependabot) {
   updates {
@@ -75,16 +63,24 @@ local effectiveDependabot = (dependabot) {
   }
 }
 
+local convertUses = (uses: String?) ->
+  if (uses == null)
+    null
+  else
+    locks[uses].renderDirective
+
 local convertedWorkflows: Mapping<String, Workflow> =
   // don't do any lockfile stuff if in test mode.
-  if (mode == "test")
+  if (testMode)
     workflows
   else
-    new {
-      for (name, workflow in workflows) {
-        [name] = (workflow) {
-          output {
-            text = super.text |> util.replaceUses(locks)
+    (workflows) {
+      [[true]] {
+        output {
+          renderer {
+            converters {
+              ["jobs[*].steps[*].uses"] = convertUses
+            }
           }
         }
       }
@@ -92,16 +88,13 @@ local convertedWorkflows: Mapping<String, Workflow> =
 
 output {
   text = throw("This module only supports multiple-file output. Evaluate me with the `-m` flag.")
-  files =
-    if (mode == "lockfile")
-      new {
-        [generator.lockfileName] = generator.result.output
-        ["dependabot.yml"] = effectiveDependabot.output
-      }
-    else
-      new {
-        for (name, workflow in convertedWorkflows) {
-          [name] = workflow.output
-        }
-      }
+  files = new {
+    when (!testMode) {
+      [generator.lockfileName] = generator.lockfileWorkflow.output
+      ["dependabot.yml"] = effectiveDependabot.output
+    }
+    for (name, workflow in convertedWorkflows) {
+      [name] = workflow.output
+    }
+  }
 }

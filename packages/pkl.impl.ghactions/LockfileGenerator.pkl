@@ -118,13 +118,13 @@ local class ActionMeta {
         tag.split(" ").first.drop(4)
 }
 
-local derivedLocks: Locks =
+fixed locks: Locks =
   if (currentLocks == null)
     newLocks
   else
     currentLocks + newLocks
 
-fixed result: Workflow = new {
+fixed lockfileWorkflow: Workflow = new {
   name = "__lockfile__"
   on {
     schedule {
@@ -151,7 +151,7 @@ fixed result: Workflow = new {
       converters {
         ["jobs[locks].steps"] = (_) -> new Listing {
           local yamlRenderer = new YamlRenderer {}
-          for (entry in derivedLocks.values.sortBy((it) -> it.usesWithTag)) {
+          for (entry in locks.values.sortBy((it) -> it.usesWithTag)) {
             new {
               name = entry.usesWithTag
               uses = new RenderDirective {
@@ -181,4 +181,6 @@ class LockEntry {
   fixed usesWithTag = "\(base)@\(version)"
 
   fixed usesWithChecksum = "\(base)@\(sha)"
+
+  fixed renderDirective = new RenderDirective { text = " \(usesWithChecksum) # \(version)" }
 }

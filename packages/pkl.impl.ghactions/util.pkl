@@ -15,8 +15,6 @@
 //===----------------------------------------------------------------------===//
 import "@com.github.actions/Workflow.pkl"
 
-import "LockfileGenerator.pkl"
-
 typealias OS = "windows" | "macOS" | "linux"
 
 local function determineOSRunsOn(input: String): OS? =
@@ -36,16 +34,3 @@ function determineOS(job: Workflow.Job): OS? =
       determineOSRunsOn(runsOn)
     else
       runsOn.fold(null, (os, runsOn) -> os ?? determineOSRunsOn(runsOn))
-
-function replaceUses(locks: LockfileGenerator.Locks): Mixin<String> = (text) ->
-  text.replaceAllMapped(Regex(#"\buses: \b(.+)\b"#), (match) ->
-    let (action = match.groups[1].value)
-      if (action.startsWith("./"))
-        match.value
-      else
-        let (entry = locks.getOrNull(action))
-          if (entry == null)
-            throw("The lockfile is out-dated and must be re-generated (using `-p mode=lockfile`).")
-          else
-            "uses: \(entry.usesWithChecksum) # \(entry.version)"
-  )
