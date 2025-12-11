@@ -17,11 +17,23 @@
 amends "../basePklProject.pkl"
 
 package {
-  version = "1.0.1"
+  version = "1.1.0"
 }
 
 dependencies {
   ["com.github.actions"] {
     uri = "package://pkg.pkl-lang.org/pkl-pantry/com.github.actions@1.1.0"
+  }
+  ["com.github.dependabot"] {
+    uri = "package://pkg.pkl-lang.org/pkl-pantry/com.github.dependabot@1.0.0"
+  }
+  ["deepToTyped"] {
+    uri = "package://pkg.pkl-lang.org/pkl-pantry/pkl.experimental.deepToTyped@1.1.1"
+  }
+}
+
+evaluatorSettings {
+  externalProperties {
+    ["testMode"] = "1"
   }
 }

@@ -56,7 +56,7 @@ examples {
               git diff --name-only
               exit 1
             fi
-
+    
     """
   }
   ["checkout.pkl -- workflows/main.yml"] {
@@ -81,7 +81,7 @@ examples {
         - uses: actions/checkout@v6
           with:
             persist-credentials: false
-
+    
     """
   }
   ["checkout.pkl -- workflows/build.yml"] {
@@ -107,7 +107,7 @@ examples {
         - uses: actions/checkout@v6
           with:
             persist-credentials: false
-
+    
     """
   }
   ["hawkeyeCheck.pkl"] {
@@ -127,7 +127,7 @@ examples {
         - run: hawkeye check --config licenserc.toml --fail-if-unknown
         container:
           image: ghcr.io/korandoru/hawkeye@sha256:c3ab994c0d81f3d116aabf9afc534e18648e3e90d7525d741c1e99dd8166ec85
-
+    
     """
   }
   ["macosBuild.pkl -- workflows/prb.yml"] {
@@ -194,7 +194,7 @@ examples {
               git diff --name-only
               exit 1
             fi
-
+    
     """
   }
   ["macosBuild.pkl -- workflows/main.yml"] {
@@ -227,7 +227,7 @@ examples {
           with:
             comment_mode: 'off'
             files: '**.xml'
-
+    
     """
   }
   ["macosBuild.pkl -- workflows/build.yml"] {
@@ -261,7 +261,7 @@ examples {
           with:
             comment_mode: 'off'
             files: '**.xml'
-
+    
     """
   }
   ["macosBuild.pkl -- workflows/test_report.yml"] {
@@ -300,7 +300,7 @@ examples {
             files: artifacts/**/*.xml
             event_file: artifacts/test-results-event-file/event.json
             event_name: ${{ github.event.workflow_run.event }}
-
+    
     """
   }
 }
