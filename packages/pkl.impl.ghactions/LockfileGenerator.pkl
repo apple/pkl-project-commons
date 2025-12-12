@@ -133,6 +133,16 @@ fixed locks: Locks =
 
 fixed lockfileWorkflow: Workflow = new {
   name = "__lockfile__"
+  on {
+    push {
+      `branches-ignore` {
+        "**"
+      }
+      `tags-ignore` {
+        "**"
+      }
+    }
+  }
   jobs {
     ["locks"] {
       `if` = "false"
