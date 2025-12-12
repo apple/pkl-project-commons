@@ -16,27 +16,7 @@ fi
 
 SCRIPT_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 
-REPOS=(
-  "pkl"
-  "pkl-go"
-  "pkl-go-examples"
-  "pkl-intellij"
-  "pkl-jvm-examples"
-  "pkl-k8s"
-  "pkl-k8s-examples"
-  "pkl-lang.org"
-  "pkl-lsp"
-  "pkl-neovim"
-  "pkl-package-docs"
-  "pkl-pantry"
-  "pkl-spring"
-  "pkl-swift"
-  "pkl-swift-examples"
-  "pkl-vscode"
-  "pkl.tmbundle"
-  "rules_pkl"
-  "tree-sitter-pkl"
-)
+source "$SCRIPT_DIR/repos.sh"
 
 LATEST_PACKAGE_VERSION=$(
   curl -s https://api.github.com/repos/apple/pkl-project-commons/releases \
