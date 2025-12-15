@@ -18,4 +18,5 @@ REPOS=(
   "pkl.tmbundle"
   "rules_pkl"
   "tree-sitter-pkl"
+  "highlightjs-pkl"
 )
