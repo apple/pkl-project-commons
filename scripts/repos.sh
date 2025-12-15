@@ -19,4 +19,5 @@ REPOS=(
   "rules_pkl"
   "tree-sitter-pkl"
   "highlightjs-pkl"
+  "pkl-readers"
 )
