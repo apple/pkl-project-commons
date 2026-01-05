@@ -1,0 +1,228 @@
+//===----------------------------------------------------------------------===//
+// Copyright © 2026 Apple Inc. and the Pkl project authors. All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//===----------------------------------------------------------------------===//
+/// Configures Gradle for GitHub actions, caching state and generating a dependency graph via Dependency Submission.
+module pkl.impl.ghactions.actions.gradle.actions.`setup-gradle`.v5.SetupGradle
+
+extends "@com.github.actions/AbstractTypedStep.pkl"
+
+fixed action: "gradle/actions/setup-gradle"
+
+fixed version: "v5"
+
+with: With
+
+class With {
+  /// Gradle version to use. If specified, this Gradle version will be downloaded, added to the PATH and used for invoking Gradle.
+  /// If not provided, it is assumed that the project uses the Gradle Wrapper.
+  `gradle-version`: String?
+
+  /// When 'true', all caching is disabled. No entries will be written to or read from the cache.
+  ///
+  /// Default if unspecified: `false`
+  `cache-disabled`: Boolean?
+
+  /// When 'true', existing entries will be read from the cache but no entries will be written.
+  /// By default this value is 'false' for workflows on the GitHub default branch and 'true' for workflows on other branches.
+  ///
+  /// Default if unspecified: `"${{ github.event.repository != null && github.ref_name != github.event.repository.default_branch }}"`
+  `cache-read-only`: Boolean?
+
+  /// When 'true', entries will not be restored from the cache but will be saved at the end of the Job.
+  /// Setting this to 'true' implies cache-read-only will be 'false'.
+  ///
+  /// Default if unspecified: `false`
+  `cache-write-only`: Boolean?
+
+  /// When 'true', a pre-existing Gradle User Home will not prevent the cache from being restored.
+  ///
+  /// Default if unspecified: `false`
+  `cache-overwrite-existing`: Boolean?
+
+  /// A base64 encoded AES key used to encrypt the configuration-cache data. The key is exported as 'GRADLE_ENCRYPTION_KEY' for later steps.
+  /// A suitable key can be generated with `openssl rand -base64 16`.
+  /// Configuration-cache data will not be saved/restored without an encryption key being provided.
+  `cache-encryption-key`: String?
+
+  /// Specifies if the action should attempt to remove any stale/unused entries from the Gradle User Home prior to saving to the GitHub Actions cache.
+  /// By default ('on-success'), cleanup is performed when all Gradle builds succeed for the Job.
+  /// This behaviour can be disabled ('never'), or configured to always run irrespective of the build outcome ('always').
+  /// Valid values are 'never', 'on-success' and 'always'.
+  ///
+  /// Default if unspecified: `"on-success"`
+  `cache-cleanup`: ("never" | "on-success" | "always")?
+
+  /// When 'true', the action will attempt to remove any stale/unused entries from the Gradle User Home prior to saving to the GitHub Actions cache.
+  `gradle-home-cache-cleanup`: Boolean?
+
+  /// Paths within Gradle User Home to cache.
+  ///
+  /// Default if unspecified: `"""
+  ///   caches
+  ///   notifications
+  ///
+  ///   """`
+  hidden `gradle-home-cache-includes-list`: Listing<String>?
+
+  /// Paths within Gradle User Home to cache.
+  ///
+  /// Default if unspecified: `"""
+  ///   caches
+  ///   notifications
+  ///
+  ///   """`
+  ///
+  /// To set as a [Listing], use [`gradle-home-cache-includes-list`].
+  `gradle-home-cache-includes`: String? = `gradle-home-cache-includes-list`?.join("\n")
+
+  /// Paths within Gradle User Home to exclude from cache.
+  hidden `gradle-home-cache-excludes-list`: Listing<String>?
+
+  /// Paths within Gradle User Home to exclude from cache.
+  ///
+  /// To set as a [Listing], use [`gradle-home-cache-excludes-list`].
+  `gradle-home-cache-excludes`: String? = `gradle-home-cache-excludes-list`?.join("\n")
+
+  /// Specifies when a Job Summary should be inluded in the action results. Valid values are 'never', 'always' (default), and 'on-failure'.
+  ///
+  /// Default if unspecified: `"always"`
+  `add-job-summary`: ("never" | "always" | "on-failure")?
+
+  /// Specifies when each Job Summary should be added as a PR comment. Valid values are 'never' (default), 'always', and 'on-failure'. No action will be taken if the workflow was not triggered from a pull request.
+  ///
+  /// Default if unspecified: `"never"`
+  `add-job-summary-as-pr-comment`: ("never" | "always" | "on-failure")?
+
+  /// Specifies if a GitHub dependency snapshot should be generated for each Gradle build, and if so, how.
+  /// Valid values are 'disabled' (default), 'generate', 'generate-and-submit', 'generate-submit-and-upload', 'generate-and-upload', and 'download-and-submit'.
+  ///
+  /// Default if unspecified: `"disabled"`
+  `dependency-graph`: (
+    "disabled"
+      | "generate"
+      | "generate-and-submit"
+      | "generate-submit-and-upload"
+      | "generate-and-upload"
+      | "download-and-submit"
+  )?
+
+  /// Specifies where the dependency graph report will be generated.
+  /// Paths can relative or absolute. Relative paths are resolved relative to the workspace directory.
+  ///
+  /// Default if unspecified: `"dependency-graph-reports"`
+  `dependency-graph-report-dir`: String?
+
+  /// When 'false' a failure to generate or submit a dependency graph will fail the Step or Job. When 'true' a warning will be emitted but no failure will result.
+  ///
+  /// Default if unspecified: `true`
+  `dependency-graph-continue-on-failure`: Boolean?
+
+  /// Gradle projects that should be excluded from dependency graph (regular expression).
+  /// When set, any matching project will be excluded.
+  `dependency-graph-exclude-projects`: String?
+
+  /// Gradle projects that should be included in dependency graph (regular expression).
+  /// When set, only matching projects will be included.
+  `dependency-graph-include-projects`: String?
+
+  /// Gradle configurations that should be included in dependency graph (regular expression).
+  /// When set, anymatching configurations will be excluded.
+  `dependency-graph-exclude-configurations`: String?
+
+  /// Gradle configurations that should be included in dependency graph (regular expression).
+  /// When set, only matching configurations will be included.
+  `dependency-graph-include-configurations`: String?
+
+  /// Specifies the number of days to retain any artifacts generated by the action. If not set, the default retention settings for the repository will apply.
+  `artifact-retention-days`: Int?
+
+  /// Set to 'true' to automatically publish build results as a Build Scan on scans.gradle.com.
+  /// For publication to succeed without user input, you must also provide values for `build-scan-terms-of-use-url` and 'build-scan-terms-of-use-agree'.
+  ///
+  /// Default if unspecified: `false`
+  `build-scan-publish`: Boolean?
+
+  /// The URL to the Build Scan® terms of use. This input must be set to 'https://gradle.com/terms-of-service' or 'https://gradle.com/help/legal-terms-of-use'.
+  `build-scan-terms-of-use-url`: String?
+
+  /// Indicate that you agree to the Build Scan® terms of use. This input value must be "yes".
+  `build-scan-terms-of-use-agree`: ("yes")?
+
+  /// Develocity access key. Should be set to a secret containing the Develocity Access key.
+  `develocity-access-key`: String?
+
+  /// The Develocity short-lived access tokens expiry in hours. Default is 2 hours.
+  `develocity-token-expiry`: Int?
+
+  /// Enables Develocity injection.
+  `develocity-injection-enabled`: Boolean?
+
+  /// The URL for the Develocity server.
+  `develocity-url`: String?
+
+  /// Allow communication with an untrusted server; set to _true_ if your Develocity instance is using a self-signed.
+  `develocity-allow-untrusted-server`: Boolean?
+
+  /// Enables capturing the paths and content hashes of each individual input file.
+  `develocity-capture-file-fingerprints`: Boolean?
+
+  /// Enforce the configured Develocity URL over a URL configured in the project's build; set to _true_ to enforce publication of build scans to the configured Develocity URL.
+  `develocity-enforce-url`: Boolean?
+
+  /// The version of the Develocity Gradle plugin to apply.
+  `develocity-plugin-version`: String?
+
+  /// The version of the Common Custom User Data Gradle plugin to apply, if any.
+  `develocity-ccud-plugin-version`: String?
+
+  /// The URL of the repository to use when resolving the Develocity and CCUD plugins; the Gradle Plugin Portal is used by default.
+  `gradle-plugin-repository-url`: String?
+
+  /// The username for the repository URL to use when resolving the Develocity and CCUD.
+  `gradle-plugin-repository-username`: String?
+
+  /// The password for the repository URL to use when resolving the Develocity and CCUD plugins; Consider using secrets to pass the value to this variable.
+  `gradle-plugin-repository-password`: String?
+
+  /// When 'true' (the default) the action will automatically validate all wrapper jars found in the repository.
+  /// If the wrapper checksums are not valid, the action will fail.
+  ///
+  /// Default if unspecified: `true`
+  `validate-wrappers`: Boolean?
+
+  /// When 'true', wrapper validation will include the checksums of snapshot wrapper jars.
+  /// Use this if you are running with nightly or snapshot versions of the Gradle wrapper.
+  ///
+  /// Default if unspecified: `false`
+  `allow-snapshot-wrappers`: Boolean?
+
+  /// Gradle command line arguments (supports multi-line input)
+  arguments: String?
+
+  /// When 'true', the action will not attempt to restore the Gradle User Home entries from other Jobs.
+  ///
+  /// Default if unspecified: `false`
+  `gradle-home-cache-strict-match`: Boolean?
+
+  /// Used to uniquely identify the current job invocation. Defaults to the matrix values for this job; this should not be overridden by users (INTERNAL).
+  ///
+  /// Default if unspecified: `"${{ toJSON(matrix) }}"`
+  `workflow-job-context`: String?
+
+  /// The GitHub token used to authenticate when submitting via the Dependency Submission API.
+  ///
+  /// Default if unspecified: `"${{ github.token }}"`
+  `github-token`: String?
+}

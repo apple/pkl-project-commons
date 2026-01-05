@@ -1,0 +1,42 @@
+//===----------------------------------------------------------------------===//
+// Copyright © 2026 Apple Inc. and the Pkl project authors. All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//===----------------------------------------------------------------------===//
+extends "@com.github.actions/catalog.pkl"
+
+import "actions/gradle/actions/setup-gradle/v5/SetupGradle.pkl"
+import "actions/PublishUnitTestResult.pkl"
+
+/// Configures Gradle for GitHub actions, caching state and generating a dependency graph via
+/// Dependency Submission.
+`gradle/actions/setup-gradle@v5`: SetupGradle
+
+/// GitHub Action to publish unit test results on GitHub for Linux
+`EnricoMi/publish-unit-test-result-action@v2`: PublishUnitTestResult
+
+/// GitHub Action to publish unit test results on GitHub for Windows
+`EnricoMi/publish-unit-test-result-action/windows@v2`: PublishUnitTestResult = new {
+  os = "windows"
+}
+
+/// GitHub Action to publish unit test results on GitHub for Windows without Powershell
+`EnricoMi/publish-unit-test-result-action/windows/bash@v2`: PublishUnitTestResult = new {
+  os = "windows"
+  noPowershell = true
+}
+
+/// GitHub Action to publish unit test results on GitHub for macOS
+`EnricoMi/publish-unit-test-result-action/macos@v2`: PublishUnitTestResult = new {
+  os = "macOS"
+}

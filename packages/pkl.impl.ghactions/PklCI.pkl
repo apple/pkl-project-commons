@@ -1,5 +1,5 @@
 //===----------------------------------------------------------------------===//
-// Copyright © 2025 Apple Inc. and the Pkl project authors. All rights reserved.
+// Copyright © 2025-2026 Apple Inc. and the Pkl project authors. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,11 +18,11 @@ module pkl.impl.ghactions.PklCI
 extends "DependabotManagedCI.pkl"
 
 import "@com.github.actions/actions/checkout/v6/Checkout.pkl"
-import "@com.github.actions/catalog.pkl"
 import "@com.github.actions/context.pkl"
 import "@com.github.actions/Workflow.pkl"
 
 import "actions/PublishUnitTestResult.pkl"
+import "catalog.pkl" as Catalog
 import "helpers.pkl"
 import "jobs/CheckPklEval.pkl"
 import "util.pkl"
@@ -36,6 +36,9 @@ local checkPklGHADefinitions: CheckPklEval = new {
     multipleFileOutputPath = ".github/"
   }
 }
+
+/// The catalog of actions
+catalog: Catalog
 
 /// The workflow that runs during pull requests.
 ///
