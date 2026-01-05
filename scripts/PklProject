@@ -1,5 +1,5 @@
 //===----------------------------------------------------------------------===//
-// Copyright © 2025-2026 Apple Inc. and the Pkl project authors. All rights reserved.
+// Copyright © 2026 Apple Inc. and the Pkl project authors. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,27 +13,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //===----------------------------------------------------------------------===//
-/// Abstractions for working with GitHub Actions for the Pkl team.
-amends "../basePklProject.pkl"
-
-package {
-  version = "1.2.0"
-}
+amends "pkl:Project"
 
 dependencies {
-  ["com.github.actions"] {
-    uri = "package://pkg.pkl-lang.org/pkl-pantry/com.github.actions@1.3.0"
+  ["com.github.actions.contrib"] {
+    uri = "package://pkg.pkl-lang.org/pkl-pantry/com.github.actions.contrib@1.0.3"
   }
-  ["com.github.dependabot"] {
-    uri = "package://pkg.pkl-lang.org/pkl-pantry/com.github.dependabot@1.0.0"
-  }
-  ["deepToTyped"] {
-    uri = "package://pkg.pkl-lang.org/pkl-pantry/pkl.experimental.deepToTyped@1.1.1"
-  }
-}
-
-evaluatorSettings {
-  externalProperties {
-    ["testMode"] = "1"
+  ["io.typesafegithub.github"] {
+    uri = "package://pkg.pkl-lang.org/pkl-pantry/io.github.typesafegithub@1.0.0"
   }
 }
