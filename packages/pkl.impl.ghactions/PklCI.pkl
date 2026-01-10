@@ -15,11 +15,11 @@
 //===----------------------------------------------------------------------===//
 module pkl.impl.ghactions.PklCI
 
-extends "DependabotManagedCI.pkl"
-
 import "@com.github.actions/actions/checkout/v6/Checkout.pkl"
 import "@com.github.actions/context.pkl"
 import "@com.github.actions/Workflow.pkl"
+import "@com.github.dependabot/v2/Dependabot.pkl"
+import "@pkl.github.dependabotManagedActions/DependabotManagedActions.pkl"
 
 import "actions/PublishUnitTestResult.pkl"
 import "catalog.pkl" as Catalog
@@ -124,6 +124,12 @@ triggerDocsBuild: "none" | "release" | "both" = "none"
 ///
 /// Does not do anything if the repo's owner is not `apple`.
 triggerPackageDocsBuild: "none" | "main" | "release" = "none"
+
+/// Any additional workflows beyond the built-in ones (prb, build, release, etc)
+workflows: Mapping<String, Workflow>
+
+/// Any additional dependabot configuration beyond GitHub Actions
+dependabot: Dependabot
 
 class TestReports {
   /// Paths, directories, and globs to junit test reports, to be processed by a GitHub Actions test reporter.
@@ -292,7 +298,7 @@ local testReportWorkflow: Workflow = new {
   on {
     workflow_run {
       workflows {
-        effectivePrbWorkflow.name
+        effectivePrbWorkflow.name!!
       }
       types {
         "completed"
@@ -533,22 +539,25 @@ local function withTriggerWorkflows(triggerType: String): Mixin<Workflow.Jobs> =
   }
 }
 
-workflows {
-  ["workflows/prb.yml"] = effectivePrbWorkflow
-  ["workflows/main.yml"] = effectiveMainWorkflow
-  ["workflows/build.yml"] = effectiveBuildWorkflow
-  when (release != null) {
-    ["workflows/release.yml"] = effectiveReleaseWorkflow
+local dma: DependabotManagedActions = new {
+  workflows = (module.workflows) {
+    ["workflows/prb.yml"] = effectivePrbWorkflow
+    ["workflows/main.yml"] = effectiveMainWorkflow
+    ["workflows/build.yml"] = effectiveBuildWorkflow
+    when (release != null) {
+      ["workflows/release.yml"] = effectiveReleaseWorkflow
+    }
+    when (releaseBranch != null) {
+      ["workflows/release-branch.yml"] = effectiveReleaseBranchWorkflow
+    }
+    when (!testReports.junit.isEmpty) {
+      ["workflows/test_report.yml"] = testReportWorkflow
+    }
   }
-  when (releaseBranch != null) {
-    ["workflows/release-branch.yml"] = effectiveReleaseBranchWorkflow
-  }
-  when (!testReports.junit.isEmpty) {
-    ["workflows/test_report.yml"] = testReportWorkflow
-  }
+  dependabot = module.dependabot
 }
 
-output {
+output = (dma.output) {
   files {
     [[true]] {
       renderer {
@@ -565,6 +574,14 @@ output {
               }
         }
       }
+    }
+  } {
+    ["workflows/__lockfile__.yml"] {
+      text =
+        """
+        #file: noinspection MandatoryParamsAbsent,UndefinedAction
+        \(super.text)
+        """
     }
   }
 }
