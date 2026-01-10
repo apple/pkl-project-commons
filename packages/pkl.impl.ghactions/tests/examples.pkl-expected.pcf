@@ -1,4 +1,45 @@
 examples {
+  ["checkout.pkl -- workflows/__lockfile__.yml"] {
+    """
+    #file: noinspection MandatoryParamsAbsent,UndefinedAction
+    # This is a fake workflow that never runs.
+    # It's used to pin actions to specific git SHAs when generating actual workflows.
+    # It also gets updated by dependabot (see .github/dependabot.yml).
+    # Generated from Workflow.pkl. DO NOT EDIT.
+    name: __lockfile__
+    'on':
+      push:
+        branches-ignore:
+        - '**'
+        tags-ignore:
+        - '**'
+    jobs:
+      locks:
+        if: 'false'
+        runs-on: nothing
+        steps:
+        - name: actions/checkout@v6
+          uses: actions/checkout@abc123 # v6
+        - name: actions/upload-artifact@v5
+          uses: actions/upload-artifact@abc123 # v5
+    
+    """
+  }
+  ["checkout.pkl -- dependabot.yml"] {
+    """
+    version: 2
+    updates:
+    - package-ecosystem: github-actions
+      directory: /
+      ignore:
+      - dependency-name: '*'
+        update-types:
+        - version-update:semver-major
+      schedule:
+        interval: weekly
+    
+    """
+  }
   ["checkout.pkl -- workflows/prb.yml"] {
     """
     # Generated from Workflow.pkl. DO NOT EDIT.
@@ -14,7 +55,7 @@ examples {
       do-build:
         runs-on: ubuntu-latest
         steps:
-        - uses: actions/checkout@v6
+        - uses: actions/checkout@abc123 # v6
           with:
             persist-credentials: false
       upload-event-file:
@@ -22,14 +63,14 @@ examples {
         steps:
         - name: Upload event file
           if: '!cancelled()'
-          uses: actions/upload-artifact@v5
+          uses: actions/upload-artifact@abc123 # v5
           with:
             name: test-results-event-file
             path: ${{ github.event_path }}
       check-pkl-github-actions:
         runs-on: ubuntu-latest
         steps:
-        - uses: actions/checkout@v6
+        - uses: actions/checkout@abc123 # v6
           with:
             persist-credentials: false
         - name: Setup Pkl
@@ -78,7 +119,7 @@ examples {
       do-build:
         runs-on: ubuntu-latest
         steps:
-        - uses: actions/checkout@v6
+        - uses: actions/checkout@abc123 # v6
           with:
             persist-credentials: false
     
@@ -104,7 +145,7 @@ examples {
       do-build:
         runs-on: ubuntu-latest
         steps:
-        - uses: actions/checkout@v6
+        - uses: actions/checkout@abc123 # v6
           with:
             persist-credentials: false
     
@@ -130,6 +171,53 @@ examples {
     
     """
   }
+  ["macosBuild.pkl -- workflows/__lockfile__.yml"] {
+    """
+    #file: noinspection MandatoryParamsAbsent,UndefinedAction
+    # This is a fake workflow that never runs.
+    # It's used to pin actions to specific git SHAs when generating actual workflows.
+    # It also gets updated by dependabot (see .github/dependabot.yml).
+    # Generated from Workflow.pkl. DO NOT EDIT.
+    name: __lockfile__
+    'on':
+      push:
+        branches-ignore:
+        - '**'
+        tags-ignore:
+        - '**'
+    jobs:
+      locks:
+        if: 'false'
+        runs-on: nothing
+        steps:
+        - name: EnricoMi/publish-unit-test-result-action/macos@v2
+          uses: EnricoMi/publish-unit-test-result-action/macos@abc123 # v2
+        - name: EnricoMi/publish-unit-test-result-action@v2
+          uses: EnricoMi/publish-unit-test-result-action@abc123 # v2
+        - name: actions/checkout@v6
+          uses: actions/checkout@abc123 # v6
+        - name: actions/upload-artifact@v5
+          uses: actions/upload-artifact@abc123 # v5
+        - name: dawidd6/action-download-artifact@v11
+          uses: dawidd6/action-download-artifact@abc123 # v11
+    
+    """
+  }
+  ["macosBuild.pkl -- dependabot.yml"] {
+    """
+    version: 2
+    updates:
+    - package-ecosystem: github-actions
+      directory: /
+      ignore:
+      - dependency-name: '*'
+        update-types:
+        - version-update:semver-major
+      schedule:
+        interval: weekly
+    
+    """
+  }
   ["macosBuild.pkl -- workflows/prb.yml"] {
     """
     # Generated from Workflow.pkl. DO NOT EDIT.
@@ -150,7 +238,7 @@ examples {
         - run: echo hello
         - name: Upload Test Result XML
           if: '!cancelled()'
-          uses: actions/upload-artifact@v5
+          uses: actions/upload-artifact@abc123 # v5
           with:
             name: test-results-xml-do-build
             path: '**.xml'
@@ -160,14 +248,14 @@ examples {
         steps:
         - name: Upload event file
           if: '!cancelled()'
-          uses: actions/upload-artifact@v5
+          uses: actions/upload-artifact@abc123 # v5
           with:
             name: test-results-event-file
             path: ${{ github.event_path }}
       check-pkl-github-actions:
         runs-on: ubuntu-latest
         steps:
-        - uses: actions/checkout@v6
+        - uses: actions/checkout@abc123 # v6
           with:
             persist-credentials: false
         - name: Setup Pkl
@@ -223,7 +311,7 @@ examples {
         - run: echo hello
         - name: Publish test results
           if: '!cancelled()'
-          uses: EnricoMi/publish-unit-test-result-action/macos@v2
+          uses: EnricoMi/publish-unit-test-result-action/macos@abc123 # v2
           with:
             comment_mode: 'off'
             files: '**.xml'
@@ -257,7 +345,7 @@ examples {
         - run: echo hello
         - name: Publish test results
           if: '!cancelled()'
-          uses: EnricoMi/publish-unit-test-result-action/macos@v2
+          uses: EnricoMi/publish-unit-test-result-action/macos@abc123 # v2
           with:
             comment_mode: 'off'
             files: '**.xml'
@@ -286,14 +374,14 @@ examples {
         runs-on: ubuntu-latest
         steps:
         - name: Download artifacts
-          uses: dawidd6/action-download-artifact@v11
+          uses: dawidd6/action-download-artifact@abc123 # v11
           with:
             path: artifacts
             name: test-results-.*
             name_is_regexp: true
             run_id: ${{ github.event.workflow_run.id }}
         - name: Publish test results
-          uses: EnricoMi/publish-unit-test-result-action@v2
+          uses: EnricoMi/publish-unit-test-result-action@abc123 # v2
           with:
             commit: ${{ github.event.workflow_run.head_sha }}
             comment_mode: 'off'
