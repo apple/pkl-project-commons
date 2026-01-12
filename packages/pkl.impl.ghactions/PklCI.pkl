@@ -29,7 +29,8 @@ import "util.pkl"
 
 local checkPklGHADefinitions: CheckPklEval = new {
   cleanPaths {
-    ".github/**/*.yml"
+    // clean up all generated files except .github/workflows/__lockfile__.yml
+    ".github/**/[a-z]*.yml"
   }
   command {
     modules {
