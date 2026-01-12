@@ -1,5 +1,5 @@
 //===----------------------------------------------------------------------===//
-// Copyright © 2025 Apple Inc. and the Pkl project authors. All rights reserved.
+// Copyright © 2025-2026 Apple Inc. and the Pkl project authors. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,6 +20,8 @@ import "@com.github.actions/catalog.pkl"
 import "@com.github.actions/Workflow.pkl"
 
 import "../steps/SetupPkl.pkl"
+
+cleanPaths: Listing<String>
 
 command: EvalCommand
 
@@ -57,6 +59,12 @@ fixed job: Workflow.Job = new {
   steps {
     catalog.`actions/checkout@v6`
     new SetupPkl { version = "0.30.0" }.step
+    when (!cleanPaths.isEmpty) {
+      new {
+        shell = "bash"
+        run = "rm -rf \(cleanPaths.join(" "))"
+      }
+    }
     new {
       shell = "bash"
       run = command.run

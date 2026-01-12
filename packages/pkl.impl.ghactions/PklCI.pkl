@@ -28,6 +28,9 @@ import "jobs/CheckPklEval.pkl"
 import "util.pkl"
 
 local checkPklGHADefinitions: CheckPklEval = new {
+  cleanPaths {
+    ".github/**/*.yml"
+  }
   command {
     modules {
       ".github/index.pkl"
