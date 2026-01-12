@@ -34,6 +34,10 @@ function repo_dir() {
 }
 
 function fetch_repo() {
+  if ! gh repo view "$MY_GIT_USER/$1" --json name > /dev/null 2> /dev/null; then
+    echo "🍽️ Forking $1..."
+    gh repo fork --default-branch-only --clone=false "apple/$1"
+  fi
   echo "📦 Fetching $1..."
   REPO_DIR="$(repo_dir "$1")"
   if [[ ! -d "$REPO_DIR" ]]; then
@@ -77,7 +81,7 @@ function update_repo() {
     return 0
   fi
   echo "  Creating branch and commit..."
-  git co -b bump-github-actions &> /dev/null
+  git checkout -b bump-github-actions &> /dev/null
   git add . &> /dev/null
   git commit -m "Bump pkl.impl.ghactions to version $LATEST_PACKAGE_VERSION" &> /dev/null
   echo "  Pushing to origin..."
