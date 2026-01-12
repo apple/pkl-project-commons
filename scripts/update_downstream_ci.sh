@@ -73,12 +73,20 @@ function update_repo() {
   sed -i '' -E "s|(package://pkg.pkl-lang.org/pkl-project-commons/pkl.impl.ghactions@)[0-9]+\.[0-9]+\.[0-9]+|\\1$LATEST_PACKAGE_VERSION|g" PklProject
   echo "  Resolving dependencies..."
   pkl project resolve > /dev/null
+  echo "  Cleaning up generated workflows..."
+  rm -f ./**/[a-z]*.yml
   echo "  Evaluating Pkl files..."
   pkl eval -m . index.pkl > /dev/null
   if [[ -z "$(git diff)" ]]; then
     echo "✅ Nothing to update for $1"
     SKIPPED_REPOS+=("$1 (no changes needed)")
     return 0
+  fi
+  if [[ -f licenserc.toml ]]; then
+    hawkeye format
+  fi
+  if [[ -f gradlew ]]; then
+    ./gradlew spotlessApply
   fi
   echo "  Creating branch and commit..."
   git checkout -b bump-github-actions &> /dev/null
