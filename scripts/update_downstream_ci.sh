@@ -8,6 +8,7 @@
 set -eo pipefail
 
 MY_GIT_USER="$(gh api user --jq '.login')"
+BRANCH_NAME=bump-github-actions
 
 if [[ -z "$MY_GIT_USER" ]]; then
   echo "Could not determine the current user in gh. Try running \`gh auth login\`."
@@ -34,7 +35,7 @@ function repo_dir() {
 }
 
 function fetch_repo() {
-  if ! gh repo view "$MY_GIT_USER/$1" --json name > /dev/null 2> /dev/null; then
+  if ! GH_PAGER='' gh repo view "$MY_GIT_USER/$1" --json name > /dev/null 2> /dev/null; then
     echo "🍽️ Forking $1..."
     gh repo fork --default-branch-only --clone=false "apple/$1"
   fi
@@ -47,6 +48,8 @@ function fetch_repo() {
   else
     cd "$REPO_DIR"
     git fetch upstream 2>&1 | grep -v "From github.com" || true
+    git reset &> /dev/null
+    git checkout . &> /dev/null
     git checkout main &> /dev/null
     git reset --hard upstream/main &> /dev/null
   fi
@@ -57,16 +60,16 @@ function update_repo() {
   cd "$(repo_dir "$1")/.github"
 
   # if bump-github-actions branch exists, and the PklProject there has the correct version, just exit early.
-  if git show-ref --verify --quiet refs/heads/bump-github-actions; then
-    git checkout bump-github-actions &> /dev/null || true
-    if grep -q "pkl.impl.ghactions@$LATEST_PACKAGE_VERSION" PklProject; then
+  if git show-ref --verify --quiet refs/heads/"$BRANCH_NAME"; then
+    git checkout "$BRANCH_NAME" &> /dev/null || true
+    if git show upstream/main:.github/PklProject | grep -q "pkl.impl.ghactions@$LATEST_PACKAGE_VERSION"; then
       echo "✅ $1 already has the correct version $LATEST_PACKAGE_VERSION"
       SKIPPED_REPOS+=("$1 (already up to date)")
       return 0
     fi
     # wrong version, reset to upstream/main and continue
     git checkout main &> /dev/null || true
-    git branch -D bump-github-actions &> /dev/null || true
+    git branch -D "$BRANCH_NAME" &> /dev/null || true
     git reset --hard upstream/main &> /dev/null || true
   fi
 
@@ -82,25 +85,51 @@ function update_repo() {
     SKIPPED_REPOS+=("$1 (no changes needed)")
     return 0
   fi
-  if [[ -f licenserc.toml ]]; then
-    hawkeye format
-  fi
-  if [[ -f gradlew ]]; then
-    ./gradlew spotlessApply
-  fi
   echo "  Creating branch and commit..."
-  git checkout -b bump-github-actions &> /dev/null
+  git checkout -b "$BRANCH_NAME" &> /dev/null
   git add . &> /dev/null
   git commit -m "Bump pkl.impl.ghactions to version $LATEST_PACKAGE_VERSION" &> /dev/null
+
+  FORMATTED=0
+  if [[ -f ../licenserc.toml ]]; then
+    echo "✍️ Formatting: hawkeye"
+    (cd .. && hawkeye format --fail-if-updated false)
+    FORMATTED=1
+  fi
+  if [[ -f ../gradlew ]]; then
+    echo "✍️ Formatting: spotless"
+    test "$1" = "pkl" && (cd .. && ./gradlew assemble)
+    (cd .. && ./gradlew spotlessApply) || true
+    FORMATTED=1
+  fi
+  if [[ "$FORMATTED" = 1 ]] && [[ -n "$(git diff)" ]]; then
+    echo "  Amending commit with formatting changes..."
+    git add . &> /dev/null
+    git commit --amend --no-edit &> /dev/null
+  fi
+
   echo "  Pushing to origin..."
-  git push --force -u origin bump-github-actions 2>&1 | grep -v "branch 'bump-github-actions' set up" || true
-  echo "  Creating pull request..."
-  PR_URL=$(gh pr create --repo "apple/$1" --base main --head "$MY_GIT_USER:bump-github-actions" \
-    --title "Bump pkl.impl.ghactions to version $LATEST_PACKAGE_VERSION" \
-    --body "Updates pkl.impl.ghactions package to version $LATEST_PACKAGE_VERSION" 2>&1 | grep "https://")
-  echo "$PR_URL"
-  CREATED_PRS+=("$1|$PR_URL")
-  echo "✅ Successfully created PR for $1"
+  git push --force -u origin "$BRANCH_NAME" 2>&1 | grep -v "branch '$BRANCH_NAME' set up" || true
+  echo "  Checking for existing pull request..."
+  PR_DATA=$(GH_PAGER='' gh pr view --repo "apple/$1" "$MY_GIT_USER:$BRANCH_NAME" --json url,state)
+  PR_DATA_STATUS=$?
+  # if this is zero and the state is OPEN, the PR already exists
+  if [ $PR_DATA_STATUS = 0 ] && [ "$(jq -r .state <<< "$PR_DATA")" = "OPEN" ]; then
+    echo "  Editing pull request..."
+    PR_URL=$(jq -r .url <<< "$PR_DATA")
+    gh pr edit "$PR_URL" --repo "apple/$1" \
+      --title "Bump pkl.impl.ghactions to version $LATEST_PACKAGE_VERSION" \
+      --body "Updates pkl.impl.ghactions package to version $LATEST_PACKAGE_VERSION"
+    echo "✅ PR already exists for $1"
+  else
+    echo "  Creating pull request..."
+    PR_URL=$(gh pr create --repo "apple/$1" --base main --head "$MY_GIT_USER:$BRANCH_NAME" \
+      --title "Bump pkl.impl.ghactions to version $LATEST_PACKAGE_VERSION" \
+      --body "Updates pkl.impl.ghactions package to version $LATEST_PACKAGE_VERSION" 2>&1 | grep "https://")
+    echo "$PR_URL"
+    CREATED_PRS+=("$1|$PR_URL")
+    echo "✅ Successfully created PR for $1"
+  fi
 }
 
 for repo in "${REPOS[@]}"; do
