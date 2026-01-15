@@ -28,6 +28,7 @@ echo "Latest pkl.impl.ghactions version: $LATEST_PACKAGE_VERSION"
 echo ""
 
 declare -a CREATED_PRS
+declare -a UPDATED_PRS
 declare -a SKIPPED_REPOS
 
 function repo_dir() {
@@ -120,7 +121,8 @@ function update_repo() {
     gh pr edit "$PR_URL" --repo "apple/$1" \
       --title "Bump pkl.impl.ghactions to version $LATEST_PACKAGE_VERSION" \
       --body "Updates pkl.impl.ghactions package to version $LATEST_PACKAGE_VERSION"
-    echo "✅ PR already exists for $1"
+    UPDATED_PRS+=("$1|$PR_URL")
+    echo "✅ Successfully updated PR for $1"
   else
     echo "  Creating pull request..."
     PR_URL=$(gh pr create --repo "apple/$1" --base main --head "$MY_GIT_USER:$BRANCH_NAME" \
@@ -146,6 +148,16 @@ echo ""
 if [[ ${#CREATED_PRS[@]} -gt 0 ]]; then
   echo "Pull Requests Created (${#CREATED_PRS[@]}):"
   for pr_info in "${CREATED_PRS[@]}"; do
+    IFS='|' read -r repo url <<< "$pr_info"
+    echo "  • $repo"
+    echo "    $url"
+  done
+  echo ""
+fi
+
+if [[ ${#UPDATED_PRS[@]} -gt 0 ]]; then
+  echo "Pull Requests Updated (${#UPDATED_PRS[@]}):"
+  for pr_info in "${UPDATED_PRS[@]}"; do
     IFS='|' read -r repo url <<< "$pr_info"
     echo "  • $repo"
     echo "    $url"

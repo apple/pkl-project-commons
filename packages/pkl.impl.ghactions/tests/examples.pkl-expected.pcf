@@ -136,6 +136,7 @@ examples {
         branches-ignore:
         - main
         - release/*
+        - dependabot/**
         tags-ignore:
         - '**'
     concurrency:
@@ -331,6 +332,7 @@ examples {
         branches-ignore:
         - main
         - release/*
+        - dependabot/**
         tags-ignore:
         - '**'
     concurrency:

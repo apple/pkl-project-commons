@@ -169,6 +169,7 @@ local effectiveBuildWorkflow = (build) {
       `branches-ignore` {
         "main"
         "release/*"
+        "dependabot/**"
       }
       `tags-ignore` {
         "**"
