@@ -1,4 +1,4 @@
-REPOS=(
+export REPOS=(
   "pkl"
   "pkl-go"
   "pkl-go-examples"
