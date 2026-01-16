@@ -1,5 +1,5 @@
 //===----------------------------------------------------------------------===//
-// Copyright © 2025 Apple Inc. and the Pkl project authors. All rights reserved.
+// Copyright © 2025-2026 Apple Inc. and the Pkl project authors. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,8 +19,9 @@ extends "PklJob.pkl"
 
 import "@com.github.actions/catalog.pkl"
 
+// v6.4.1
 image: String =
-  "ghcr.io/korandoru/hawkeye@sha256:c3ab994c0d81f3d116aabf9afc534e18648e3e90d7525d741c1e99dd8166ec85"
+  "ghcr.io/korandoru/hawkeye@sha256:e0abf8dbfaeeeba1249679d662d9fb404b1dcdb041c6093ea1f7a6edb7d89319"
 
 configPath: String = "licenserc.toml"
 
@@ -37,10 +38,17 @@ fixed job {
   steps {
     (catalog.`actions/checkout@v6`) {
       with {
-        // required to result git attrs
+        // required to set git attrs
         `fetch-depth` = 0
+        // used the PR HEAD if runnning on a PR
+        ref =
+          "${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || '' }}"
       }
     }
+    // force git to behave in the container
+    // the checkout action allegedly does this
+    // but this has been required for hawkeye in some cases
+    new { run = "git config --global --add safe.directory $(pwd)" }
     new {
       run =
         new Listing {
