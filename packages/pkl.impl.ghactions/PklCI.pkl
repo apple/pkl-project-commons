@@ -89,6 +89,9 @@ build: Workflow
 /// This turns into a workflow called "Release".
 release: Workflow?
 
+/// Tag glob patterns to ignore for releases
+releaseIgnoreTags: Listing<String>?
+
 /// The workflow that runs when commits land on `release/x.x` branches.
 ///
 /// The following fields are amended with additional settings:
@@ -279,12 +282,12 @@ local effectiveReleaseWorkflow = (release) {
   }
   on {
     push {
-      tags {
-        "**"
+      when (releaseIgnoreTags != null) {
+        `tags-ignore` = releaseIgnoreTags
+      } else {
+        tags { "**" }
       }
-      `branches-ignore` {
-        "**"
-      }
+      `branches-ignore` { "**" }
     }
   }
   jobs =
