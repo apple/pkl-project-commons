@@ -1,0 +1,5 @@
+examples {
+  ["template injection"] {
+    "Invalid workflow: [job:foo step:0 field:run] Potential template injection, use expressions via `env` instead"
+  }
+}

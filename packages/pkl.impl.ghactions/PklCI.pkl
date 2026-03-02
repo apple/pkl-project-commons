@@ -17,6 +17,8 @@ module pkl.impl.ghactions.PklCI
 
 import "@com.github.actions/actions/checkout/v6/Checkout.pkl"
 import "@com.github.actions/context.pkl"
+import "@com.github.actions/Job.pkl"
+import "@com.github.actions/Step.pkl"
 import "@com.github.actions/Workflow.pkl"
 import "@com.github.dependabot/v2/Dependabot.pkl"
 import "@pkl.github.dependabotManagedActions/DependabotManagedActions.pkl"
@@ -54,7 +56,7 @@ catalog: Catalog
 ///   * [Workflow.concurrency]
 ///
 /// This turns into a workflow called "Pull Request".
-prb: Workflow
+prb: Workflow(isValid)
 
 /// The workflow to run for commits that land on the main branch.
 ///
@@ -65,7 +67,7 @@ prb: Workflow
 ///   * [Workflow.concurrency]
 ///
 /// This turns into a workflow called "Build (main)".
-main: Workflow
+main: Workflow(isValid)
 
 /// The workflow to run for commits that land on all branches except for `main` and `release/*`
 ///
@@ -76,7 +78,7 @@ main: Workflow
 ///   * [Workflow.concurrency]
 ///
 /// This turns into a workflow called "Build".
-build: Workflow
+build: Workflow(isValid)
 
 /// The workflow that runs when tags are pushed.
 ///
@@ -87,7 +89,7 @@ build: Workflow
 ///   * [Workflow.concurrency]
 ///
 /// This turns into a workflow called "Release".
-release: Workflow?
+release: Workflow(isValid)?
 
 /// Tag glob patterns to ignore for releases
 releaseIgnoreTags: Listing<String>?
@@ -101,7 +103,7 @@ releaseIgnoreTags: Listing<String>?
 ///   * [Workflow.concurrency]
 ///
 /// This turns into a workflow called "Build (release branch)".
-releaseBranch: Workflow?
+releaseBranch: Workflow(isValid)?
 
 /// Test reports produced by [build] and [release].
 ///
@@ -133,7 +135,7 @@ triggerDocsBuild: "none" | "release" | "both" = "none"
 triggerPackageDocsBuild: "none" | "main" | "release" = "none"
 
 /// Any additional workflows beyond the built-in ones (prb, build, release, etc)
-workflows: Mapping<String, Workflow>
+workflows: Mapping<String, Workflow(isValid)>
 
 /// Any additional dependabot configuration beyond GitHub Actions
 dependabot: Dependabot
@@ -332,14 +334,14 @@ local testReportWorkflow: Workflow = new {
             ["path"] = "artifacts"
             ["name"] = "test-results-.*"
             ["name_is_regexp"] = true
-            ["run_id"] = "${{ github.event.workflow_run.id }}"
+            ["run_id"] = context.github.event("workflow_run.id")
           }
         }
         new PublishUnitTestResult {
           name = "Publish test results"
           with {
-            commit = "${{ github.event.workflow_run.head_sha }}"
-            event_name = "${{ github.event.workflow_run.event }}"
+            commit = context.github.event("workflow_run.head_sha")
+            event_name = context.github.event("workflow_run.event")
             event_file = "artifacts/\(TEST_RESULT_EVENT_FILE_ARTIFACT_NAME)/event.json"
             file_patterns { "artifacts/**/*.xml" }
             comment_mode = "off"
@@ -485,6 +487,38 @@ local withPublishTestResults: Mixin<Workflow.Jobs> = (it) ->
           }
         }
 
+/// Validate a Workflow; for use as a type constraint.
+///
+/// Validations
+/// * Steps must not contain known template injection vectors.
+hidden const isValid: (Workflow) -> Boolean = (workflow) ->
+  let (
+    errors =
+      workflow.jobs
+        .toMap()
+        .entries
+        .flatMap((job) ->
+          if (job.value is Job)
+            job.value.steps
+              .toList()
+              .flatMapIndexed((stepIndex, step) ->
+                if (step is Step && step.run != null && step.run.contains("${{"))
+                  // there are other actions that have fields susceptible to template injection
+                  // but we don't use them
+                  // the zizmor project has a great tool for identifying these: https://github.com/zizmorcore/zizmor/blob/main/support/codeql-injection-sinks.py
+                  // and a few manually maintained entries: https://github.com/zizmorcore/zizmor/blob/cdc816b480a895144197fab903efc819810aca17/crates/zizmor/src/audit/template_injection.rs#L59-L74
+                  List(
+                    "[job:\(job.key) step:\(stepIndex) field:run] Potential template injection, use expressions via `env` instead"
+                  )
+                else
+                  List()
+              )
+          else
+            List()
+        )
+  )
+    if (errors.isEmpty) true else throw("Invalid workflow:\n\(errors.join("\n"))")
+
 local function withTriggerWorkflows(triggerType: String): Mixin<Workflow.Jobs> = (it) -> (it) {
   when (
     triggerType == triggerDocsBuild
@@ -514,14 +548,16 @@ local function withTriggerWorkflows(triggerType: String): Mixin<Workflow.Jobs> =
           new {
             name = "Trigger pkl-lang.org build"
             env {
-              ["GH_TOKEN"] = "${{ steps.app-token.outputs.token }}"
+              ["GH_TOKEN"] = context.steps.outputs("app-token", "token")
+              ["SOURCE_RUN"] =
+                "\(context.github.serverUrl)/\(context.github.repository)/actions/runs/\(context.github.runId)"
             }
             run =
               #"""
               gh workflow run \
                 --repo apple/pkl-lang.org \
                 --ref main \
-                --field source_run="\#(context.github.serverUrl)/\#(context.github.repository)/actions/runs/\#(context.github.runId)" \
+                --field source_run="${SOURCE_RUN}" \
                 main.yml
               """#
           }
@@ -530,14 +566,16 @@ local function withTriggerWorkflows(triggerType: String): Mixin<Workflow.Jobs> =
           new {
             name = "Trigger pkl-package-docs build"
             env {
-              ["GH_TOKEN"] = "${{ steps.app-token.outputs.token }}"
+              ["GH_TOKEN"] = context.steps.outputs("app-token", "token")
+              ["SOURCE_RUN"] =
+                "\(context.github.serverUrl)/\(context.github.repository)/actions/runs/\(context.github.runId)"
             }
             run =
               #"""
               gh workflow run \
                 --repo apple/pkl-package-docs \
                 --ref main \
-                --field source_run="\#(context.github.serverUrl)/\#(context.github.repository)/actions/runs/\#(context.github.runId)" \
+                --field source_run="${SOURCE_RUN}" \
                 main.yml
               """#
           }
