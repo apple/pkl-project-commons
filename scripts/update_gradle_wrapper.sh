@@ -1,14 +1,21 @@
 #!/usr/bin/env bash
-# This script will, for each Pkl repo, bump the version of `pkl.impl.ghactions` to the latest version, and
-# create a GitHub pull request.
+# This script will, for each Pkl repo containing a gradlew file, bump the version of the gradle wrapper to the specified version.
 # It assumes that every repo exists in a forked account.
 #
-# Usage: ./update_downstream_ci.sh
+# Usage: ./update_gradle_wrapper.sh <version>
 
 set -eo pipefail
 
+GRADLE_VERSION=$1
+
+if [ -z "$GRADLE_VERSION" ]; then
+  echo "Usage: update_gradle_wrapper.sh <version>"
+  exit 1
+fi
+
 MY_GIT_USER="$(gh api user --jq '.login')"
-BRANCH_NAME=bump-github-actions
+BRANCH_NAME=bump-gradle-wrapper-$GRADLE_VERSION
+GRADLE_DIST_SUM=$(curl -sSL "https://services.gradle.org/distributions/gradle-$GRADLE_VERSION-bin.zip.sha256")
 
 if [[ -z "$MY_GIT_USER" ]]; then
   echo "Could not determine the current user in gh. Try running \`gh auth login\`."
@@ -19,27 +26,21 @@ SCRIPT_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
 source "$SCRIPT_DIR/repos.sh"
 
-LATEST_PACKAGE_VERSION=$(
-  curl -s https://api.github.com/repos/apple/pkl-project-commons/releases \
-    | jq -r '[.[] | select(.tag_name | startswith("pkl.impl.ghactions"))] | .[0].name | split("@")[1]'
-)
-
-echo "Latest pkl.impl.ghactions version: $LATEST_PACKAGE_VERSION"
-echo ""
-
 declare -a CREATED_PRS
-declare -a UPDATED_PRS
 declare -a SKIPPED_REPOS
 
 function update_repo() {
-  echo "🔧 Updating $1..."
-  cd "$(repo_dir "$1")/.github"
+  cd "$(repo_dir "$1")"
 
-  # if bump-github-actions branch exists, and the PklProject there has the correct version, just exit early.
+  if ! [[ -f ./gradlew ]]; then
+    SKIPPED_REPOS+=("$1 (no ./gradlew)")
+    return 0
+  fi
+
   if git show-ref --verify --quiet refs/heads/"$BRANCH_NAME"; then
     git checkout "$BRANCH_NAME" &> /dev/null || true
-    if git show upstream/main:.github/PklProject | grep -q "pkl.impl.ghactions@$LATEST_PACKAGE_VERSION"; then
-      echo "✅ $1 already has the correct version $LATEST_PACKAGE_VERSION"
+    if git show upstream/main:gradle/wrapper/gradle-wrapper.properties | grep -q "gradle-$GRADLE_VERSION-bin.zip"; then
+      echo "✅ $1 already has the correct version $GRADLE_VERSION"
       SKIPPED_REPOS+=("$1 (already up to date)")
       return 0
     fi
@@ -49,43 +50,17 @@ function update_repo() {
     git reset --hard upstream/main &> /dev/null || true
   fi
 
-  sed -i '' -E "s|(package://pkg.pkl-lang.org/pkl-project-commons/pkl.impl.ghactions@)[0-9]+\.[0-9]+\.[0-9]+|\\1$LATEST_PACKAGE_VERSION|g" PklProject
-  echo "  Resolving dependencies..."
-  pkl project resolve > /dev/null
-  echo "  Cleaning up generated workflows..."
-  rm -f ./**/[a-z]*.yml
-  echo "  Evaluating Pkl files..."
-  pkl eval -m . index.pkl > /dev/null
-  if [[ -z "$(git diff)" ]]; then
-    echo "✅ Nothing to update for $1"
-    SKIPPED_REPOS+=("$1 (no changes needed)")
-    return 0
-  fi
+  echo "🔧 Updating $1..."
+  ./gradlew wrapper --gradle-version "$GRADLE_VERSION" --gradle-distribution-sha256-sum "$GRADLE_DIST_SUM" && ./gradlew wrapper
+
   echo "  Creating branch and commit..."
   git checkout -b "$BRANCH_NAME" &> /dev/null
   git add . &> /dev/null
-  git commit -m "Bump pkl.impl.ghactions to version $LATEST_PACKAGE_VERSION" &> /dev/null
-
-  FORMATTED=0
-  if [[ -f ../licenserc.toml ]]; then
-    echo "✍️ Formatting: hawkeye"
-    (cd .. && hawkeye format --fail-if-updated false)
-    FORMATTED=1
-  fi
-  if [[ -f ../gradlew ]]; then
-    echo "✍️ Formatting: spotless"
-    test "$1" = "pkl" && (cd .. && ./gradlew assemble)
-    (cd .. && ./gradlew spotlessApply) || true
-    FORMATTED=1
-  fi
-  if [[ "$FORMATTED" = 1 ]] && [[ -n "$(git diff)" ]]; then
-    echo "  Amending commit with formatting changes..."
-    git add . &> /dev/null
-    git commit --amend --no-edit &> /dev/null
-  fi
+  git commit -m "Bump Gradle to version $GRADLE_VERSION" &> /dev/null
 
   echo "  Pushing to origin..."
   git push --force -u origin "$BRANCH_NAME" 2>&1 | grep -v "branch '$BRANCH_NAME' set up" || true
+
   echo "  Checking for existing pull request..."
   set +e
   PR_DATA=$(GH_PAGER='' gh pr view --repo "apple/$1" "$MY_GIT_USER:$BRANCH_NAME" --json url,state)
@@ -93,18 +68,12 @@ function update_repo() {
   set -e
   # if this is zero and the state is OPEN, the PR already exists
   if [ $PR_DATA_STATUS = 0 ] && [ "$(jq -r .state <<< "$PR_DATA")" = "OPEN" ]; then
-    echo "  Editing pull request..."
-    PR_URL=$(jq -r .url <<< "$PR_DATA")
-    gh pr edit "$PR_URL" --repo "apple/$1" \
-      --title "Bump pkl.impl.ghactions to version $LATEST_PACKAGE_VERSION" \
-      --body "Updates pkl.impl.ghactions package to version $LATEST_PACKAGE_VERSION"
-    UPDATED_PRS+=("$1|$PR_URL")
-    echo "✅ Successfully updated PR for $1"
+    SKIPPED_REPOS+=("$1 (pr already exists)")
+    echo "✅ Existing PR found for $1"
   else
     echo "  Creating pull request..."
     PR_URL=$(gh pr create --repo "apple/$1" --base main --head "$MY_GIT_USER:$BRANCH_NAME" \
-      --title "Bump pkl.impl.ghactions to version $LATEST_PACKAGE_VERSION" \
-      --body "Updates pkl.impl.ghactions package to version $LATEST_PACKAGE_VERSION" 2>&1 | grep "https://")
+      --title "Bump Gradle to version $GRADLE_VERSION" --body '' 2>&1 | grep "https://")
     echo "$PR_URL"
     CREATED_PRS+=("$1|$PR_URL")
     echo "✅ Successfully created PR for $1"
