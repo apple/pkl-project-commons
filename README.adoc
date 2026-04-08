@@ -26,3 +26,15 @@ This tool assumes:
 1. You have `pkl`, `jq`, and `gh` installed.
 2. You are logged into `gh`.
 3. You have every downstream repo forked onto your personal GitHub account.
+
+== Internal IntelliJ Plugin
+
+There is an IntelliJ plugin to help with working on Pkl-related repos.
+
+This plugin provides a split pane window when viewing snippet tests such as LanguageSnippetTests and FormatterSnippetTests.
+
+To install:
+
+1. Run `./gradlew pkl-internal-intellij-plugin:buildPlugin`.
+2. Within IntelliJ, run the action "Install Plugin From Disk...".
+3. Select the zip file within `pkl-internal-intellij-plugin/build/distributions`.

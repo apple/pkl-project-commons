@@ -1,0 +1,193 @@
+/**
+ * Copyright © 2026 Apple Inc. and the Pkl project authors. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import com.diffplug.spotless.FormatterFunc
+import com.diffplug.spotless.FormatterStep
+import java.io.Serial
+import java.io.Serializable
+import java.net.URI
+import javax.net.ssl.HttpsURLConnection
+import kotlin.math.ceil
+import kotlin.math.log10
+import kotlin.math.max
+import org.pkl.core.Version
+import org.pkl.formatter.Formatter
+import org.pkl.formatter.GrammarVersion
+
+plugins {
+  alias(libs.plugins.kotlin)
+  alias(libs.plugins.pkl)
+  alias(libs.plugins.spotless)
+}
+
+class PklFormatterStep : Serializable {
+  companion object {
+    @Serial private const val serialVersionUID: Long = 1L
+  }
+
+  fun create(): FormatterStep {
+    return FormatterStep.createLazy("pkl", { PklFormatterStep() }, { PklFormatterFunc() })
+  }
+}
+
+class PklFormatterFunc : FormatterFunc, Serializable {
+  companion object {
+    @Serial private const val serialVersionUID: Long = 1L
+  }
+
+  override fun apply(input: String): String {
+    return Formatter().format(input, GrammarVersion.V1)
+  }
+}
+
+val originalRemoteName = System.getenv("PKL_ORIGINAL_REMOTE_NAME") ?: "origin"
+
+spotless {
+  ratchetFrom = "$originalRemoteName/main"
+  format("pkl") {
+    licenseHeader(
+      $$"""
+      //===----------------------------------------------------------------------===//
+      // Copyright © $YEAR Apple Inc. and the Pkl project authors. All rights reserved.
+      //
+      // Licensed under the Apache License, Version 2.0 (the "License");
+      // you may not use this file except in compliance with the License.
+      // You may obtain a copy of the License at
+      //
+      //     https://www.apache.org/licenses/LICENSE-2.0
+      //
+      // Unless required by applicable law or agreed to in writing, software
+      // distributed under the License is distributed on an "AS IS" BASIS,
+      // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+      // See the License for the specific language governing permissions and
+      // limitations under the License.
+      //===----------------------------------------------------------------------===//
+      """
+        .trimIndent(),
+      "(/// |/\\*\\*|module |import |amends |(\\w+))",
+    )
+    target("**/*.pkl", "**/PklProject")
+    addStep(PklFormatterStep().create())
+  }
+}
+
+kotlin { jvmToolchain(21) }
+
+repositories { mavenCentral() }
+
+dependencies {
+  testImplementation(libs.pklCore)
+  testImplementation(libs.junitEngine)
+  testImplementation(libs.junitParams)
+}
+
+val repositoryUrl = "https://github.com/apple/pkl-pantry"
+
+val repositoryApiUrl = repositoryUrl.replace(Regex("github.com/"), "api.github.com/repos/")
+
+val projectDirs: List<File> =
+  file(".").listFiles()!!.filter { it.isDirectory && it.name.startsWith("pkl.") }.toList()
+
+val outputDir = layout.buildDirectory
+
+pkl {
+  project {
+    resolvers { register("resolveProjects") { projectDirectories.from(projectDirs) } }
+    packagers {
+      register("createPackages") {
+        projectDirectories.from(projectDirs)
+        outputPath = outputDir.dir("generated/packages/%{name}/%{version}")
+        junitReportsDir = outputDir.dir("test-results")
+        externalProperties.put("pkl-pantry.testMode", "1")
+        color = true
+      }
+    }
+  }
+}
+
+val resolveProjects = tasks.named("resolveProjects") { group = "build" }
+
+val createPackages =
+  tasks.named("createPackages") {
+    group = "build"
+    dependsOn.add(resolveProjects)
+  }
+
+val isInCircleCi = System.getenv("CIRCLE_PROJECT_REPONAME") != null
+
+val prepareCiGit by tasks.registering {
+  enabled = isInCircleCi
+  doLast {
+    providers
+      .exec { commandLine("git", "config", "user.email", "pkl-oss@groups.apple.com") }
+      .result
+      .get()
+    providers
+      .exec { commandLine("git", "config", "user.name", "The Pkl Team (automation)") }
+      .result
+      .get()
+  }
+}
+
+val prepareReleases by tasks.registering {
+  group = "build"
+  dependsOn(createPackages, prepareCiGit)
+  inputs.files(projectDirs)
+
+  doLast {
+    val releaseDir = file(outputDir.dir("releases"))
+    releaseDir.deleteRecursively()
+    val count = projectDirs.count()
+    val fmt = "%${max(1, ceil(log10(count.toDouble())).toInt())}d"
+
+    for (i in projectDirs.indices) {
+      val dir = projectDirs[i]
+      print(" [${fmt.format(i + 1)}/$count] $dir: ")
+      val allVersions = file(outputDir.dir("generated/packages/${dir.name}")).list()
+      if (allVersions == null) {
+        println("∅")
+        continue
+      }
+      val latestVersion = allVersions.map(Version::parse).sortedWith(Version.comparator()).last()
+      val pkg = "${dir.name}@$latestVersion"
+      print("$pkg: ")
+      val conn =
+        URI("${repositoryUrl}/releases/tag/${dir.name}@$latestVersion").toURL().openConnection()
+          as HttpsURLConnection
+      if (conn.responseCode == 200) {
+        println("⏩")
+        continue
+      }
+      val execOutput = providers.exec { commandLine("git", "tag", "-l", pkg) }
+      execOutput.result.get() // run the task
+      if (execOutput.standardOutput.asText.get().contains(pkg)) {
+        println("☑️")
+        continue
+      }
+      for (artifact in
+        file(outputDir.dir("generated/packages/${dir.name}/$latestVersion")).listFiles()!!) {
+        artifact.copyTo(releaseDir.resolve("$pkg/${artifact.name}"), true)
+      }
+      println("✅")
+    }
+  }
+}
+
+tasks.test {
+  useJUnitPlatform()
+  dependsOn(createPackages)
+}
+
+tasks.build { dependsOn(prepareReleases) }
