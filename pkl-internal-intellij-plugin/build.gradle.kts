@@ -13,14 +13,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-plugins { alias(libs.plugins.spotless) }
+plugins {
+  alias(libs.plugins.kotlin)
+  alias(libs.plugins.intellij)
+  alias(libs.plugins.spotless)
+}
 
-repositories { mavenCentral() }
+repositories {
+  mavenCentral()
+  intellijPlatform { defaultRepositories() }
+}
+
+dependencies {
+  intellijPlatform {
+    intellijIdea(libs.versions.intellij.get())
+    bundledPlugin("com.intellij.java")
+    bundledPlugin("org.jetbrains.plugins.gradle")
+    bundledPlugin("JUnit")
+  }
+}
 
 spotless {
-  kotlinGradle {
+  kotlin {
     ktfmt(libs.versions.ktfmt.get()).googleStyle()
-    target("**/*.kts")
     licenseHeader(
       $$"""
       /**
@@ -39,8 +54,7 @@ spotless {
        * limitations under the License.
        */
       """
-        .trimIndent(),
-      "([a-zA-Z]|@file|//)",
+        .trimIndent()
     )
   }
 }
