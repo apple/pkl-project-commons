@@ -15,12 +15,21 @@
 //===----------------------------------------------------------------------===//
 extends "@com.github.actions/catalog.pkl"
 
-import "actions/gradle/actions/setup-gradle/v5/SetupGradle.pkl"
+import "actions/gradle/actions/dependency-submission/v6/DependencySubmission.pkl"
+import "actions/gradle/actions/setup-gradle/v5/SetupGradle.pkl" as SetupGradleV5
+import "actions/gradle/actions/setup-gradle/v6/SetupGradle.pkl" as SetupGradleV6
 import "actions/PublishUnitTestResult.pkl"
+
+/// Generates a dependency graph for a Gradle project and submits it via the Dependency Submission API.
+`gradle/actions/dependency-submission@v6`: DependencySubmission
 
 /// Configures Gradle for GitHub actions, caching state and generating a dependency graph via
 /// Dependency Submission.
-`gradle/actions/setup-gradle@v5`: SetupGradle
+`gradle/actions/setup-gradle@v5`: SetupGradleV5
+
+/// Configures Gradle for GitHub actions, caching state and generating a dependency graph via
+/// Dependency Submission.
+`gradle/actions/setup-gradle@v6`: SetupGradleV6
 
 /// GitHub Action to publish unit test results on GitHub for Linux
 `EnricoMi/publish-unit-test-result-action@v2`: PublishUnitTestResult
