@@ -17,21 +17,21 @@
 amends "../basePklProject.pkl"
 
 package {
-  version = "1.5.0"
+  version = "1.6.0"
 }
 
 dependencies {
   ["com.github.actions"] {
-    uri = "package://pkg.pkl-lang.org/pkl-pantry/com.github.actions@1.3.0"
+    uri = "package://pkg.pkl-lang.org/pkl-pantry/com.github.actions@1.4.0"
   }
   ["com.github.dependabot"] {
-    uri = "package://pkg.pkl-lang.org/pkl-pantry/com.github.dependabot@1.0.0"
+    uri = "package://pkg.pkl-lang.org/pkl-pantry/com.github.dependabot@1.0.1"
   }
   ["deepToTyped"] {
     uri = "package://pkg.pkl-lang.org/pkl-pantry/pkl.experimental.deepToTyped@1.1.1"
   }
   ["pkl.github.dependabotManagedActions"] {
-    uri = "package://pkg.pkl-lang.org/pkl-pantry/pkl.github.dependabotManagedActions@1.0.3"
+    uri = "package://pkg.pkl-lang.org/pkl-pantry/pkl.github.dependabotManagedActions@1.1.0"
   }
 }
 

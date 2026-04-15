@@ -15,18 +15,23 @@
 //===----------------------------------------------------------------------===//
 import "@com.github.actions.contrib/ActionGenerator.pkl"
 
-import "actionTypes/gradle/actions/setup-gradle@v5.pkl" as setupGradle
+local setupGradleGenerator: ActionGenerator = new {
+  actionName = "gradle/actions/setup-gradle@v6"
+  githubActionsPackageName = "@com.github.actions"
+}
 
-local generator: ActionGenerator = new {
-  actionTypes = setupGradle
-  actionName = "gradle/actions/setup-gradle@v5"
+local dependencySubmissionGenerator: ActionGenerator = new {
+  actionName = "gradle/actions/dependency-submission@v6"
   githubActionsPackageName = "@com.github.actions"
 }
 
 output {
   files {
-    ["packages/pkl.impl.ghactions/actions/gradle/actions/setup-gradle/v5/SetupGradle.pkl"] {
-      text = generator.result
+    ["packages/pkl.impl.ghactions/actions/gradle/actions/setup-gradle/v6/SetupGradle.pkl"] {
+      text = setupGradleGenerator.result
+    }
+    ["packages/pkl.impl.ghactions/actions/gradle/actions/dependency-submission/v6/DependencySubmission.pkl"] {
+      text = dependencySubmissionGenerator.result
     }
   }
 }
