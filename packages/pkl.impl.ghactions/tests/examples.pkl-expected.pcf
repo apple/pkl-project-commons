@@ -23,6 +23,10 @@ examples {
           uses: actions/checkout@abc123 # v6
         - name: actions/upload-artifact@v5
           uses: actions/upload-artifact@abc123 # v5
+        - name: github/codeql-action/analyze@v4
+          uses: github/codeql-action/analyze@abc123 # v4
+        - name: github/codeql-action/init@v4
+          uses: github/codeql-action/init@abc123 # v4
     
     """
   }
@@ -154,6 +158,39 @@ examples {
         - uses: actions/checkout@abc123 # v6
           with:
             persist-credentials: false
+    
+    """
+  }
+  ["checkout.pkl -- workflows/codeql.yml"] {
+    """
+    # Generated from Workflow.pkl. DO NOT EDIT.
+    'on':
+      pull_request:
+        branches:
+        - main
+      push:
+        branches:
+        - main
+      schedule:
+      - cron: 29 17 * * 4
+    jobs:
+      analyze-actions:
+        name: Analyze (actions)
+        permissions:
+          security-events: write
+        runs-on: ubuntu-latest
+        steps:
+        - uses: actions/checkout@abc123 # v6
+          with:
+            persist-credentials: false
+        - uses: github/codeql-action/init@abc123 # v4
+          with:
+            languages: actions
+            build-mode: none
+        - name: Perform CodeQL Analysis
+          uses: github/codeql-action/analyze@abc123 # v4
+          with:
+            category: /language:actions
     
     """
   }
@@ -326,6 +363,23 @@ examples {
       schedule:
       - cron: 29 17 * * 4
     jobs:
+      analyze-actions:
+        name: Analyze (actions)
+        permissions:
+          security-events: write
+        runs-on: ubuntu-latest
+        steps:
+        - uses: actions/checkout@abc123 # v6
+          with:
+            persist-credentials: false
+        - uses: github/codeql-action/init@abc123 # v4
+          with:
+            languages: actions
+            build-mode: none
+        - name: Perform CodeQL Analysis
+          uses: github/codeql-action/analyze@abc123 # v4
+          with:
+            category: /language:actions
       analyze-java:
         name: Analyze (java)
         permissions:
@@ -417,6 +471,10 @@ examples {
           uses: actions/upload-artifact@abc123 # v5
         - name: dawidd6/action-download-artifact@v11
           uses: dawidd6/action-download-artifact@abc123 # v11
+        - name: github/codeql-action/analyze@v4
+          uses: github/codeql-action/analyze@abc123 # v4
+        - name: github/codeql-action/init@v4
+          uses: github/codeql-action/init@abc123 # v4
     
     """
   }
@@ -610,6 +668,39 @@ examples {
             files: artifacts/**/*.xml
             event_file: artifacts/test-results-event-file/event.json
             event_name: ${{ github.event.workflow_run.event }}
+    
+    """
+  }
+  ["macosBuild.pkl -- workflows/codeql.yml"] {
+    """
+    # Generated from Workflow.pkl. DO NOT EDIT.
+    'on':
+      pull_request:
+        branches:
+        - main
+      push:
+        branches:
+        - main
+      schedule:
+      - cron: 29 17 * * 4
+    jobs:
+      analyze-actions:
+        name: Analyze (actions)
+        permissions:
+          security-events: write
+        runs-on: ubuntu-latest
+        steps:
+        - uses: actions/checkout@abc123 # v6
+          with:
+            persist-credentials: false
+        - uses: github/codeql-action/init@abc123 # v4
+          with:
+            languages: actions
+            build-mode: none
+        - name: Perform CodeQL Analysis
+          uses: github/codeql-action/analyze@abc123 # v4
+          with:
+            category: /language:actions
     
     """
   }

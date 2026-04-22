@@ -114,7 +114,17 @@ testReports: TestReports
 /// CodeQL security scans to run.
 ///
 /// Sets up scanning for builds on the main branch, as well as pull requests.
-codeql: CodeQL?
+///
+/// By default, sets up scanning for actions.
+/// Scanning can be turned off by explicitly setting to `null`.
+codeql: CodeQL? = new {
+  scans {
+    new {
+      language = "actions"
+      buildMode = "none"
+    }
+  }
+}
 
 /// Whether to trigger a build of the Pkl docsite or not.
 ///
