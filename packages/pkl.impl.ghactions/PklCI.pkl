@@ -17,6 +17,7 @@ module pkl.impl.ghactions.PklCI
 
 import "@com.github.actions/actions/checkout/v6/Checkout.pkl"
 import "@com.github.actions/context.pkl"
+import "@com.github.actions/github/codeql-action/Config.pkl" as CodeQLConfig
 import "@com.github.actions/Job.pkl"
 import "@com.github.actions/Step.pkl"
 import "@com.github.actions/Workflow.pkl"
@@ -110,6 +111,21 @@ releaseBranch: Workflow(isValid)?
 /// Turns into steps that upload and processes test results.
 testReports: TestReports
 
+/// CodeQL security scans to run.
+///
+/// Sets up scanning for builds on the main branch, as well as pull requests.
+///
+/// By default, sets up scanning for actions.
+/// Scanning can be turned off by explicitly setting to `null`.
+codeql: CodeQL? = new {
+  scans {
+    new {
+      language = "actions"
+      buildMode = "none"
+    }
+  }
+}
+
 /// Whether to trigger a build of the Pkl docsite or not.
 ///
 /// * `"none"` - does not trigger build after the [release] workflow (default).
@@ -157,6 +173,69 @@ class TestReports {
       else
         pattern == jobKey
     )
+}
+
+class CodeQLScan {
+  /// The language to scan for.
+  language: "actions"
+    | "java-kotlin"
+    | "javascript-typescript"
+    | "javascript"
+    | "typescript"
+    | "c-cpp"
+    | "c"
+    | "cpp"
+    | "csharp"
+    | "go"
+    | "java-kotlin"
+    | "java"
+    | "kotlin"
+    | "python"
+    | "ruby"
+    | "rust"
+    | "swift"
+
+  /// For compiled languages, the matrix can also be used to configure which build mode should be used for analysis by
+  /// changing the value of the build-mode property.
+  ///
+  /// For more information about build modes, see CodeQL code scanning for compiled languages.
+  buildMode: "none" | "autobuild" | "manual"
+
+  /// Manual build command for the project (if [buildMode] is manual).
+  buildScript: String(buildMode == "manual")?
+}
+
+class CodeQL {
+  /// The scans to run during analysis.
+  scans: Listing<CodeQLScan>(!isEmpty, isDistinctBy((it) -> it.language))
+
+  /// Custom configuration for scanning.
+  config: CodeQLConfig?
+
+  /// The triggers for this scan.
+  ///
+  /// If unset, uses [defaultOn].
+  on: Workflow.On?
+
+  /// The default triggers for the codeql workflow.
+  const defaultOn: Workflow.On = new {
+    push {
+      branches {
+        "main"
+      }
+    }
+    pull_request {
+      branches {
+        "main"
+      }
+    }
+    schedule {
+      new {
+        // picked a random time; this is 17:29 UTC on Thursday
+        cron = "29 17 * * 4"
+      }
+    }
+  }
 }
 
 local effectiveBuildWorkflow = (build) {
@@ -345,6 +424,45 @@ local testReportWorkflow: Workflow = new {
             event_file = "artifacts/\(TEST_RESULT_EVENT_FILE_ARTIFACT_NAME)/event.json"
             file_patterns { "artifacts/**/*.xml" }
             comment_mode = "off"
+          }
+        }
+      }
+    }
+  }
+}
+
+local effectiveCodeQlWorkflow: Workflow = new {
+  on = codeql!!.on ?? codeql!!.defaultOn
+  jobs {
+    for (scan in codeql!!.scans) {
+      ["analyze-\(scan.language)"] {
+        name = "Analyze (\(scan.language))"
+        `runs-on` = "ubuntu-latest"
+        permissions {
+          `security-events` = "write"
+        }
+        steps {
+          catalog.`actions/checkout@v6`
+          (catalog.`github/codeql-action/init@v4`) {
+            with {
+              languages = scan.language
+              `build-mode` = scan.buildMode
+              when (codeql!!.config != null) {
+                codeQLConfig = codeql!!.config
+              }
+            }
+          }
+          when (scan.buildScript != null) {
+            new {
+              name = "Run manual build steps"
+              run = scan.buildScript
+            }
+          }
+          (catalog.`github/codeql-action/analyze@v4`) {
+            name = "Perform CodeQL Analysis"
+            with {
+              category = "/language:\(scan.language)"
+            }
           }
         }
       }
@@ -598,6 +716,9 @@ local dma: DependabotManagedActions = new {
     }
     when (!testReports.junit.isEmpty) {
       ["workflows/test_report.yml"] = testReportWorkflow
+    }
+    when (codeql != null) {
+      ["workflows/codeql.yml"] = effectiveCodeQlWorkflow
     }
   }
   dependabot = module.dependabot

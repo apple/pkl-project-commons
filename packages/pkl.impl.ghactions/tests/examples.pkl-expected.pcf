@@ -23,6 +23,10 @@ examples {
           uses: actions/checkout@abc123 # v6
         - name: actions/upload-artifact@v5
           uses: actions/upload-artifact@abc123 # v5
+        - name: github/codeql-action/analyze@v4
+          uses: github/codeql-action/analyze@abc123 # v4
+        - name: github/codeql-action/init@v4
+          uses: github/codeql-action/init@abc123 # v4
     
     """
   }
@@ -157,6 +161,264 @@ examples {
     
     """
   }
+  ["checkout.pkl -- workflows/codeql.yml"] {
+    """
+    # Generated from Workflow.pkl. DO NOT EDIT.
+    'on':
+      pull_request:
+        branches:
+        - main
+      push:
+        branches:
+        - main
+      schedule:
+      - cron: 29 17 * * 4
+    jobs:
+      analyze-actions:
+        name: Analyze (actions)
+        permissions:
+          security-events: write
+        runs-on: ubuntu-latest
+        steps:
+        - uses: actions/checkout@abc123 # v6
+          with:
+            persist-credentials: false
+        - uses: github/codeql-action/init@abc123 # v4
+          with:
+            languages: actions
+            build-mode: none
+        - name: Perform CodeQL Analysis
+          uses: github/codeql-action/analyze@abc123 # v4
+          with:
+            category: /language:actions
+    
+    """
+  }
+  ["codeql.pkl -- workflows/__lockfile__.yml"] {
+    """
+    #file: noinspection MandatoryParamsAbsent,UndefinedAction
+    # This is a fake workflow that never runs.
+    # It's used to pin actions to specific git SHAs when generating actual workflows.
+    # It also gets updated by dependabot (see .github/dependabot.yml).
+    # Generated from Workflow.pkl. DO NOT EDIT.
+    name: __lockfile__
+    'on':
+      push:
+        branches-ignore:
+        - '**'
+        tags-ignore:
+        - '**'
+    permissions: {}
+    jobs:
+      locks:
+        if: 'false'
+        runs-on: nothing
+        steps:
+        - name: actions/checkout@v6
+          uses: actions/checkout@abc123 # v6
+        - name: actions/upload-artifact@v5
+          uses: actions/upload-artifact@abc123 # v5
+        - name: github/codeql-action/analyze@v4
+          uses: github/codeql-action/analyze@abc123 # v4
+        - name: github/codeql-action/init@v4
+          uses: github/codeql-action/init@abc123 # v4
+    
+    """
+  }
+  ["codeql.pkl -- dependabot.yml"] {
+    """
+    version: 2
+    updates:
+    - package-ecosystem: github-actions
+      cooldown:
+        default-days: 7
+      directory: /
+      ignore:
+      - dependency-name: '*'
+        update-types:
+        - version-update:semver-major
+      schedule:
+        interval: weekly
+    
+    """
+  }
+  ["codeql.pkl -- workflows/prb.yml"] {
+    """
+    # Generated from Workflow.pkl. DO NOT EDIT.
+    name: Pull Request
+    'on':
+      pull_request: {}
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
+    permissions:
+      contents: read
+    jobs:
+      do-build:
+        runs-on: ubuntu-latest
+        steps:
+        - run: echo hello
+      upload-event-file:
+        runs-on: ubuntu-latest
+        steps:
+        - name: Upload event file
+          if: '!cancelled()'
+          uses: actions/upload-artifact@abc123 # v5
+          with:
+            name: test-results-event-file
+            path: ${{ github.event_path }}
+      check-pkl-github-actions:
+        runs-on: ubuntu-latest
+        steps:
+        - uses: actions/checkout@abc123 # v6
+          with:
+            persist-credentials: false
+        - name: Setup Pkl
+          id: setup-pkl
+          env:
+            PKL_VERSION: 0.30.0
+            PKL_FILENAME: pkl
+            PKL_DOWNLOAD_URL: https://github.com/apple/pkl/releases/download/0.30.0/pkl-linux-amd64
+          shell: bash
+          run: |-
+            DIR="$(mktemp -d /tmp/pkl-$PKL_VERSION-XXXXXX)"
+            PKL_EXEC="$DIR/$PKL_FILENAME"
+            curl -sfL -o $PKL_EXEC "$PKL_DOWNLOAD_URL"
+            chmod +x $PKL_EXEC
+            echo "$DIR" >> "$GITHUB_PATH"
+            echo "pkl_exec=$PKL_EXEC" >> "$GITHUB_OUTPUT"
+        - shell: bash
+          run: rm -rf .github/**/[a-z]*.yml
+        - shell: bash
+          run: pkl eval -m .github/ --project-dir .github/ .github/index.pkl
+        - name: check git status
+          shell: bash
+          run: |-
+            if [ -n "$(git status --porcelain)" ]; then
+              echo "Running pkl resulted in a diff! You likely need to run 'pkl eval' and commit the changes."
+              git diff --name-only
+              exit 1
+            fi
+    
+    """
+  }
+  ["codeql.pkl -- workflows/main.yml"] {
+    """
+    # Generated from Workflow.pkl. DO NOT EDIT.
+    name: Build (main)
+    'on':
+      push:
+        branches:
+        - main
+        tags-ignore:
+        - '**'
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: false
+    permissions:
+      contents: read
+    jobs:
+      do-build:
+        runs-on: ubuntu-latest
+        steps:
+        - run: echo hello
+    
+    """
+  }
+  ["codeql.pkl -- workflows/build.yml"] {
+    """
+    # Generated from Workflow.pkl. DO NOT EDIT.
+    name: Build
+    'on':
+      push:
+        branches-ignore:
+        - main
+        - release/*
+        - dependabot/**
+        tags-ignore:
+        - '**'
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: false
+    permissions:
+      contents: read
+    jobs:
+      do-build:
+        runs-on: ubuntu-latest
+        steps:
+        - run: echo hello
+    
+    """
+  }
+  ["codeql.pkl -- workflows/codeql.yml"] {
+    """
+    # Generated from Workflow.pkl. DO NOT EDIT.
+    'on':
+      pull_request:
+        branches:
+        - main
+      push:
+        branches:
+        - main
+      schedule:
+      - cron: 29 17 * * 4
+    jobs:
+      analyze-actions:
+        name: Analyze (actions)
+        permissions:
+          security-events: write
+        runs-on: ubuntu-latest
+        steps:
+        - uses: actions/checkout@abc123 # v6
+          with:
+            persist-credentials: false
+        - uses: github/codeql-action/init@abc123 # v4
+          with:
+            languages: actions
+            build-mode: none
+        - name: Perform CodeQL Analysis
+          uses: github/codeql-action/analyze@abc123 # v4
+          with:
+            category: /language:actions
+      analyze-java:
+        name: Analyze (java)
+        permissions:
+          security-events: write
+        runs-on: ubuntu-latest
+        steps:
+        - uses: actions/checkout@abc123 # v6
+          with:
+            persist-credentials: false
+        - uses: github/codeql-action/init@abc123 # v4
+          with:
+            languages: java
+            build-mode: autobuild
+        - name: Perform CodeQL Analysis
+          uses: github/codeql-action/analyze@abc123 # v4
+          with:
+            category: /language:java
+      analyze-javascript:
+        name: Analyze (javascript)
+        permissions:
+          security-events: write
+        runs-on: ubuntu-latest
+        steps:
+        - uses: actions/checkout@abc123 # v6
+          with:
+            persist-credentials: false
+        - uses: github/codeql-action/init@abc123 # v4
+          with:
+            languages: javascript
+            build-mode: manual
+        - name: Run manual build steps
+          run: make build
+        - name: Perform CodeQL Analysis
+          uses: github/codeql-action/analyze@abc123 # v4
+          with:
+            category: /language:javascript
+    
+    """
+  }
   ["hawkeyeCheck.pkl"] {
     """
     # Generated from Workflow.pkl. DO NOT EDIT.
@@ -209,6 +471,10 @@ examples {
           uses: actions/upload-artifact@abc123 # v5
         - name: dawidd6/action-download-artifact@v11
           uses: dawidd6/action-download-artifact@abc123 # v11
+        - name: github/codeql-action/analyze@v4
+          uses: github/codeql-action/analyze@abc123 # v4
+        - name: github/codeql-action/init@v4
+          uses: github/codeql-action/init@abc123 # v4
     
     """
   }
@@ -402,6 +668,39 @@ examples {
             files: artifacts/**/*.xml
             event_file: artifacts/test-results-event-file/event.json
             event_name: ${{ github.event.workflow_run.event }}
+    
+    """
+  }
+  ["macosBuild.pkl -- workflows/codeql.yml"] {
+    """
+    # Generated from Workflow.pkl. DO NOT EDIT.
+    'on':
+      pull_request:
+        branches:
+        - main
+      push:
+        branches:
+        - main
+      schedule:
+      - cron: 29 17 * * 4
+    jobs:
+      analyze-actions:
+        name: Analyze (actions)
+        permissions:
+          security-events: write
+        runs-on: ubuntu-latest
+        steps:
+        - uses: actions/checkout@abc123 # v6
+          with:
+            persist-credentials: false
+        - uses: github/codeql-action/init@abc123 # v4
+          with:
+            languages: actions
+            build-mode: none
+        - name: Perform CodeQL Analysis
+          uses: github/codeql-action/analyze@abc123 # v4
+          with:
+            category: /language:actions
     
     """
   }
