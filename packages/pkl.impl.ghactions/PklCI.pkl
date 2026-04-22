@@ -207,7 +207,7 @@ class CodeQLScan {
 
 class CodeQL {
   /// The scans to run during analysis.
-  scans: Listing<CodeQLScan>(!isEmpty)
+  scans: Listing<CodeQLScan>(!isEmpty, isDistinctBy((it) -> it.language))
 
   /// Custom configuration for scanning.
   config: CodeQLConfig?
