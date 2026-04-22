@@ -58,3 +58,12 @@ testReports {
     "build/test-results/**/*.xml"
   }
 }
+
+codeql {
+  scans {
+    new {
+      language = "java-kotlin"
+      buildMode = "autobuild"
+    }
+  }
+}
