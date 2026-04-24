@@ -416,6 +416,26 @@ examples {
           uses: github/codeql-action/analyze@abc123 # v4
           with:
             category: /language:javascript
+      analyze-swift:
+        name: Analyze (swift)
+        if: github.repository_owner == 'apple'
+        permissions:
+          security-events: write
+        runs-on:
+        - self-hosted
+        - macos
+        steps:
+        - uses: actions/checkout@abc123 # v6
+          with:
+            persist-credentials: false
+        - uses: github/codeql-action/init@abc123 # v4
+          with:
+            languages: swift
+            build-mode: autobuild
+        - name: Perform CodeQL Analysis
+          uses: github/codeql-action/analyze@abc123 # v4
+          with:
+            category: /language:swift
     
     """
   }
