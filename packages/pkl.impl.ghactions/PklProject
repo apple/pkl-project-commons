@@ -17,7 +17,7 @@
 amends "../basePklProject.pkl"
 
 package {
-  version = "1.7.0"
+  version = "1.7.1"
 }
 
 dependencies {
@@ -25,7 +25,7 @@ dependencies {
     uri = "package://pkg.pkl-lang.org/pkl-pantry/com.github.actions@1.6.0"
   }
   ["com.github.dependabot"] {
-    uri = "package://pkg.pkl-lang.org/pkl-pantry/com.github.dependabot@1.0.3"
+    uri = "package://pkg.pkl-lang.org/pkl-pantry/com.github.dependabot@1.0.4"
   }
   ["deepToTyped"] {
     uri = "package://pkg.pkl-lang.org/pkl-pantry/pkl.experimental.deepToTyped@1.1.1"

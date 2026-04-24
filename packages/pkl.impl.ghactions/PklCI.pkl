@@ -203,14 +203,14 @@ class CodeQLScan {
 
   /// Manual build command for the project (if [buildMode] is manual).
   buildScript: String(buildMode == "manual")?
+
+  /// Custom configuration for scanning.
+  config: CodeQLConfig?
 }
 
 class CodeQL {
   /// The scans to run during analysis.
   scans: Listing<CodeQLScan>(!isEmpty, isDistinctBy((it) -> it.language))
-
-  /// Custom configuration for scanning.
-  config: CodeQLConfig?
 
   /// The triggers for this scan.
   ///
@@ -437,7 +437,15 @@ local effectiveCodeQlWorkflow: Workflow = new {
     for (scan in codeql!!.scans) {
       ["analyze-\(scan.language)"] {
         name = "Analyze (\(scan.language))"
-        `runs-on` = "ubuntu-latest"
+        when (scan.language == "swift") {
+          `if` = "github.repository_owner == 'apple'"
+          `runs-on` {
+            "self-hosted"
+            "macos"
+          }
+        } else {
+          `runs-on` = "ubuntu-latest"
+        }
         permissions {
           `security-events` = "write"
         }
@@ -447,8 +455,8 @@ local effectiveCodeQlWorkflow: Workflow = new {
             with {
               languages = scan.language
               `build-mode` = scan.buildMode
-              when (codeql!!.config != null) {
-                codeQLConfig = codeql!!.config
+              when (scan.config != null) {
+                codeQLConfig = scan.config
               }
             }
           }
