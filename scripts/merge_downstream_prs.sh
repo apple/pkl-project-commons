@@ -31,10 +31,10 @@ echo "Latest pkl.impl.ghactions version: $VERSION"
 
 find_pr_and_merge() {
   repo="$1"
-  pr_number="$(gh pr list --repo "apple/$repo" --json title,number \
-    | jq --arg VERSION "$VERSION" \
+  pr_number="$(gh pr list --repo "apple/$repo" --json title,number,author \
+    | jq --arg VERSION "$VERSION" --argjson MAINTAINERS "$MAINTAINERS" \
       '.[]
-      | select(.title == "Bump pkl.impl.ghactions to version \($VERSION)")
+      | select((.title == "Bump pkl.impl.ghactions to version \($VERSION)") and (.author.login | IN($MAINTAINERS[])))
       | .number')"
 
   if [ -z "$pr_number" ]; then
