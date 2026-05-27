@@ -24,6 +24,8 @@ export REPOS=(
   "pkl-readers"
 )
 
+export MAINTAINERS='["bioball","HT154","stackoverflow"]'
+
 function repo_dir() {
   echo "$SCRIPT_DIR/../build/update_downstream_ci/$1"
 }
