@@ -111,6 +111,11 @@ releaseBranch: Workflow(isValid)?
 /// Turns into steps that upload and processes test results.
 testReports: TestReports
 
+/// List of job names of [prb] that are required for the generated "verdict" job to succeed.
+///
+/// If not specified, all jobs of [prb] that have no dependent jobs will be required.
+prbRequiredJobs: Listing<String(prb.jobs.containsKey(this))>(isDistinct)?
+
 /// CodeQL security scans to run.
 ///
 /// Sets up scanning for builds on the main branch, as well as pull requests.
@@ -167,12 +172,13 @@ class TestReports {
   excludeJobs: Listing<String | Regex>
 
   function includes(jobKey: String): Boolean =
-    !excludeJobs.any((pattern) ->
-      if (pattern is Regex)
-        pattern.matchEntire(jobKey) != null
-      else
-        pattern == jobKey
-    )
+    jobKey != "verdict"
+      && !excludeJobs.any((pattern) ->
+        if (pattern is Regex)
+          pattern.matchEntire(jobKey) != null
+        else
+          pattern == jobKey
+      )
 }
 
 class CodeQLScan {
@@ -333,7 +339,7 @@ local effectivePrbWorkflow = (prb) {
   on {
     pull_request {}
   }
-  jobs = (super.jobs |> withUploadTestResultXml |> withUploadTestResultHtml) {
+  jobs = (super.jobs |> withVerdict |> withUploadTestResultXml |> withUploadTestResultHtml) {
     ["upload-event-file"] {
       `runs-on` = "ubuntu-latest"
       steps {
@@ -474,6 +480,29 @@ local effectiveCodeQlWorkflow: Workflow = new {
           }
         }
       }
+    }
+  }
+}
+
+local withVerdict: Mixin<Workflow.Jobs> = (it) -> (it) {
+  ["verdict"] {
+    `runs-on` = "ubuntu-latest"
+    // allow any dependencies to either succeed or be skipped
+    `if` = "!cancelled() && !failure()"
+    needs =
+      prbRequiredJobs
+        // fallback: depend on any job that has no dependent jobs
+        ?? new Listing {
+          "check-pkl-github-actions"
+          for (jobName in it.keys) {
+            // when no job's `needs` contains `jobName`
+            when (!it.any((_, job) -> job.needs?.contains(jobName) ?? false)) {
+              jobName
+            }
+          }
+        }
+    steps {
+      new { run = "true" }
     }
   }
 }
@@ -634,7 +663,7 @@ hidden const isValid: (Workflow) -> Boolean = (workflow) ->
                   // the zizmor project has a great tool for identifying these: https://github.com/zizmorcore/zizmor/blob/main/support/codeql-injection-sinks.py
                   // and a few manually maintained entries: https://github.com/zizmorcore/zizmor/blob/cdc816b480a895144197fab903efc819810aca17/crates/zizmor/src/audit/template_injection.rs#L59-L74
                   List(
-                    "[job:\(job.key) step:\(stepIndex) field:run] Potential template injection, use expressions via `env` instead"
+                    "[job:\(job.key) step:\(stepIndex) field:run] Potential template injection, use expressions via `env` instead",
                   )
                 else
                   List()
