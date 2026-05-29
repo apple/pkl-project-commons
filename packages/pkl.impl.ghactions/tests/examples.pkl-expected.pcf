@@ -65,6 +65,14 @@ examples {
         - uses: actions/checkout@abc123 # v6
           with:
             persist-credentials: false
+      verdict:
+        if: '!cancelled() && !failure()'
+        needs:
+        - check-pkl-github-actions
+        - do-build
+        runs-on: ubuntu-latest
+        steps:
+        - run: 'true'
       upload-event-file:
         runs-on: ubuntu-latest
         steps:
@@ -258,6 +266,14 @@ examples {
         runs-on: ubuntu-latest
         steps:
         - run: echo hello
+      verdict:
+        if: '!cancelled() && !failure()'
+        needs:
+        - check-pkl-github-actions
+        - do-build
+        runs-on: ubuntu-latest
+        steps:
+        - run: 'true'
       upload-event-file:
         runs-on: ubuntu-latest
         steps:
@@ -540,6 +556,14 @@ examples {
             name: test-results-xml-do-build
             path: '**.xml'
             if-no-files-found: ignore
+      verdict:
+        if: '!cancelled() && !failure()'
+        needs:
+        - check-pkl-github-actions
+        - do-build
+        runs-on: ubuntu-latest
+        steps:
+        - run: 'true'
       upload-event-file:
         runs-on: ubuntu-latest
         steps:

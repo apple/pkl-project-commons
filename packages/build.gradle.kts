@@ -48,7 +48,7 @@ class PklFormatterFunc : FormatterFunc, Serializable {
   }
 
   override fun apply(input: String): String {
-    return Formatter().format(input, GrammarVersion.V1)
+    return Formatter().format(input, GrammarVersion.V2)
   }
 }
 
