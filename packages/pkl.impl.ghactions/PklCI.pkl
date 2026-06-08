@@ -488,7 +488,7 @@ local withVerdict: Mixin<Workflow.Jobs> = (it) -> (it) {
   ["verdict"] {
     `runs-on` = "ubuntu-latest"
     // allow any dependencies to either succeed or be skipped
-    `if` = "!cancelled() && !failure()"
+    `if` = "always()"
     needs =
       prbRequiredJobs
         // fallback: depend on any job that has no dependent jobs
@@ -502,7 +502,16 @@ local withVerdict: Mixin<Workflow.Jobs> = (it) -> (it) {
           }
         }
     steps {
-      new { run = "true" }
+      new {
+        name = "Failure verdict"
+        `if` = "contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')"
+        // language=bash
+        run =
+          """
+          echo "Some of the required jobs are either failing or were cancelled"
+          exit 1
+          """
+      }
     }
   }
 }
