@@ -31,6 +31,8 @@ private fun possibleOutputPaths(testType: String, relativePath: String): String?
       else relativePath.dropLast(3) + "pcf"
     "FormatterSnippetTests" -> relativePath
     "SnippetTests" -> relativePath.replaceAfterLast('.', "yaml")
+    "DiagnosticsSnippetTests",
+    "ParserSnippetTests" -> relativePath.replaceAfterLast('.', "txt")
     else -> null
   }
 }
