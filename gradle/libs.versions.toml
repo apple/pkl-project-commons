@@ -1,7 +1,7 @@
 [versions]
 pkl = "0.32.0"
 kotlin = "2.3.21"
-junit = "6.1.0"
+junit = "6.1.1"
 spotless = "8.7.0"
 intellijPlugin = "2.13.1"
 intellij = "2026.1"
