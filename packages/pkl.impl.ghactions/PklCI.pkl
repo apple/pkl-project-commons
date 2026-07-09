@@ -768,6 +768,19 @@ local dma: DependabotManagedActions = new {
     }
   }
   dependabot = module.dependabot
+  dependabotGitHubActions {
+    schedule {
+      interval = "quarterly"
+    }
+    groups {
+      ["first-party"] {
+        patterns { "actions/*" }
+      }
+      ["codeql"] {
+        patterns { "github/codeql-action/*" }
+      }
+    }
+  }
 }
 
 output = (dma.output) {
