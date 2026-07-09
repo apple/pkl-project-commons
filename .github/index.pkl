@@ -58,3 +58,21 @@ testReports {
     "build/test-results/**/*.xml"
   }
 }
+
+dependabot {
+  updates {
+    new {
+      `package-ecosystem` = "gradle"
+      schedule {
+        interval = "quarterly"
+      }
+      cooldown {
+        `default-days` = 7
+        exclude {
+          "org.pkl-lang"
+        }
+      }
+      directory = "/"
+    }
+  }
+}
