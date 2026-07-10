@@ -15,6 +15,7 @@
 //===----------------------------------------------------------------------===//
 module pkl.impl.ghactions.PklCI
 
+import "@com.github.actions/AbstractJob.pkl"
 import "@com.github.actions/actions/checkout/v6/Checkout.pkl"
 import "@com.github.actions/context.pkl"
 import "@com.github.actions/github/codeql-action/Config.pkl" as CodeQLConfig
@@ -212,6 +213,9 @@ class CodeQLScan {
 
   /// Custom configuration for scanning.
   config: CodeQLConfig?
+
+  /// Additional steps to run between checkout and CodeQL init.
+  preSteps: Listing<AbstractJob.Step>
 }
 
 class CodeQL {
@@ -457,6 +461,7 @@ local effectiveCodeQlWorkflow: Workflow = new {
         }
         steps {
           catalog.`actions/checkout@v6`
+          ...scan.preSteps
           (catalog.`github/codeql-action/init@v4`) {
             with {
               languages = scan.language
